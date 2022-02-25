@@ -48,7 +48,7 @@ MU      = 0.15;
 
 % Technical parameters
 ESTM_BOTH   = 1; % if ESTM_BOTH =0, estimate MU only. if =1, estimate both MU and RHO
-UPDT_V      = 0.5; %update speed for value loop (lower value->conservative)
+UPDT_V      = 0.3; %update speed for value loop (lower value->conservative)
 UPDT_W      = 0.3; %update speed for wage loop (lower value->conservative)
 UPDT_V_NL   = 0.5; %update speed for nonlinear value loop (lower value->conservative)
 UPDT_W_NL   = 0.3; %update speed for nonlinear wage loop (lower value->conservative)

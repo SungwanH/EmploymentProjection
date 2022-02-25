@@ -62,20 +62,13 @@ while (ITER_TEMP <= MAXIT) && ((wfmax > TOL_NL_TEMP) || (pfmax > TOL_NL_TEMP))  
     
     for n=1:1:N
         idx=n:N:length(Din)-(N-n);
-%        DD(idx,:) = Din_k(idx,:).*(cp.*(T_hat.^(GAMMA.*(THETA*ones(1,N)))));   
-        DD(idx,:) = Din_k(idx,:).*(cp.*(T_hat));   
+        DD(idx,:) = Din_k(idx,:).*(cp.*T_hat);   
     end
     for n=1:1:N
         idx=n:N:length(Din)-(N-n);
         Dinp(idx,:)=DD(idx,:)./(phatp(:,n)*ones(1,N)); 
     end
 
-%    for n=1:N
-%        for j=1:J
-%            %Dinp(n+(j-1)*N, :) = (c(j,:).*TAU(n+(j-1)*N,:) ./ p_new(j,n)).^( - THETA(j) ) .* T_temp(j,:);
-%            Dinp(n+(j-1)*N, :) = (TAU(n+(j-1)*N,:)).^(-THETA(j)) .* c(j,:).^(-THETA(j)).*T_temp(j,:) .* p_new(j,n).^(THETA(j));
-%        end
-%    end
     
     % step 3: Solve for expenditure share (by taking inverse)
 
@@ -99,7 +92,6 @@ while (ITER_TEMP <= MAXIT) && ((wfmax > TOL_NL_TEMP) || (pfmax > TOL_NL_TEMP))  
             A(i,i) = 1-(1-GAMMA(j,i))*Dinp(i+(j-1)*N, i);
         end
         X(j,:) = (A\(RHS(j,:)'))';
-%        X(j,:) = (inv(A)*RHS(j,:)')';
     end
 
     for n=1:N
@@ -115,19 +107,19 @@ while (ITER_TEMP <= MAXIT) && ((wfmax > TOL_NL_TEMP) || (pfmax > TOL_NL_TEMP))  
     w_new = (GAMMA.*sumpiX)./ (Ljn_hat .*VALjn0);
 
     %update p and w     
-    pfdev    = abs(phat - pf0); % Checking tolerance
+%    pfdev    = abs(phat - pf0); % Checking tolerance
+%    pfdev2    = norm((phat - pf0)./(pf0),1);
+    pfdev    = log(phat) - log(pf0);
     pf0      = phat;
     pfmax    = max(max(pfdev));
-    wfdev    = abs(w_new - wf0); % Checking tolerance
+    
+%    wfdev    = abs(w_new - wf0); % Checking tolerance
+    wfdev    = abs(log(w_new) - log(wf0));
     wf0      = w_new*UPDT_W_NL + wf0*(1-UPDT_W_NL);
     wfmax    = max(max(wfdev));
-    %disp('pfmax')
-%    pfmax
-    %disp('wfmax')
-%    wfmax
-    %Xmax
     ITER_TEMP       = ITER_TEMP + 1;
 end
+
 % Price index
 Pf0=prod(pf0.^(ALPHAS));
 % Update labor income

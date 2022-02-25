@@ -14,46 +14,12 @@ v2struct(params.prod);
 %RUN_NLPF_SS    = 1;
 %RUN_NLPF       = 1; 
 RUN_NLPF_HAT_SS = 0; 
-RUN_NLPF_HAT    = 1; 
+RUN_NLPF_HAT    = 0; 
 RUN_DGP         = 1; 
 RUN_RECUR       = 1;
 
 %Productivity and belief
 T_belief = BELIEF(params, W_TRUE);
-
-figure
-hold on
-title('Productivity Belief across Sector')
-plot(2:TIME, permute(T_belief(1,CHINA,2:TIME,2),[2,3,4,1]))
-plot(2:TIME, permute(T_belief(2,CHINA,2:TIME,2),[2,3,4,1]))
-plot(2:TIME, permute(T_belief(3,CHINA,2:TIME,2),[2,3,4,1]))
-plot(2:TIME, permute(T_belief(4,CHINA,2:TIME,2),[2,3,4,1]))
-saveas(gcf,'figures/belief_sectors.png')
-
-figure
-hold on
-title('Objective Productivity and Belief (sector 1)')
-plot(1:TIME, permute(T(1,CHINA,1:TIME),[2,3,1]))
-plot(1:TIME, permute(T_belief(1,CHINA,1:TIME,1),[2,3,4,1]),'--')
-plot(3:TIME, permute(T_belief(1,CHINA,3:TIME,3),[2,3,4,1]),'--')
-plot(5:TIME, permute(T_belief(1,CHINA,5:TIME,5),[2,3,4,1]),'--')
-plot(7:TIME, permute(T_belief(1,CHINA,7:TIME,7),[2,3,4,1]),'--')
-plot(10:TIME, permute(T_belief(1,CHINA,10:TIME,10),[2,3,4,1]),'--')
-legend('Productivity','Belief at t=1','Belief at t=5','Belief at t=10','location','best')
-saveas(gcf,'figures/prod_and_belief_sec1.png')
-figure
-hold on
-title('Objective Productivity and Belief (sector 2)')
-plot(1:TIME, permute(T(2,CHINA,1:TIME),[2,3,1]))
-plot(1:TIME, permute(T_belief(2,CHINA,1:TIME,1),[2,3,4,1]),'--')
-plot(3:TIME, permute(T_belief(2,CHINA,3:TIME,3),[2,3,4,1]),'--')
-plot(5:TIME, permute(T_belief(2,CHINA,5:TIME,5),[2,3,4,1]),'--')
-plot(7:TIME, permute(T_belief(2,CHINA,7:TIME,7),[2,3,4,1]),'--')
-plot(10:TIME, permute(T_belief(2,CHINA,10:TIME,10),[2,3,4,1]),'--')
-legend('Productivity','Belief at t=1','Belief at t=5','Belief at t=10','location','best')
-saveas(gcf,'figures/prod_and_belief_sec2.png')
-
-
 
 %{
 %% Obtain non-linear Steady State level outcome
@@ -99,7 +65,7 @@ else
     %loading the equilibrium paths in the baseline economy
     load('DATA/NLPF_HAT.mat','eqm_nlpf_HAT','approx_nlpf_HAT'); %loading the equilibrium values in the baseline economy
 end
-stop
+
 %% Obtain DGP path
 if RUN_DGP ==1
 disp('#################')
@@ -119,6 +85,38 @@ else
 end
 
 %% figures (I'll make it as a function later)
+
+figure
+hold on
+title('Productivity Belief across Sector')
+plot(2:TIME, permute(T_belief(1,CHINA,2:TIME,2),[2,3,4,1]))
+plot(2:TIME, permute(T_belief(2,CHINA,2:TIME,2),[2,3,4,1]))
+plot(2:TIME, permute(T_belief(3,CHINA,2:TIME,2),[2,3,4,1]))
+plot(2:TIME, permute(T_belief(4,CHINA,2:TIME,2),[2,3,4,1]))
+saveas(gcf,'figures/belief_sectors.png')
+
+figure
+hold on
+title('Objective Productivity and Belief (sector 1)')
+plot(1:TIME, permute(T(1,CHINA,1:TIME),[2,3,1]))
+plot(1:TIME, permute(T_belief(1,CHINA,1:TIME,1),[2,3,4,1]),'--')
+plot(3:TIME, permute(T_belief(1,CHINA,3:TIME,3),[2,3,4,1]),'--')
+plot(5:TIME, permute(T_belief(1,CHINA,5:TIME,5),[2,3,4,1]),'--')
+plot(7:TIME, permute(T_belief(1,CHINA,7:TIME,7),[2,3,4,1]),'--')
+plot(10:TIME, permute(T_belief(1,CHINA,10:TIME,10),[2,3,4,1]),'--')
+legend('Productivity','Belief at t=1','Belief at t=5','Belief at t=10','location','best')
+saveas(gcf,'figures/prod_and_belief_sec1.png')
+figure
+hold on
+title('Objective Productivity and Belief (sector 2)')
+plot(1:TIME, permute(T(2,CHINA,1:TIME),[2,3,1]))
+plot(1:TIME, permute(T_belief(2,CHINA,1:TIME,1),[2,3,4,1]),'--')
+plot(3:TIME, permute(T_belief(2,CHINA,3:TIME,3),[2,3,4,1]),'--')
+plot(5:TIME, permute(T_belief(2,CHINA,5:TIME,5),[2,3,4,1]),'--')
+plot(7:TIME, permute(T_belief(2,CHINA,7:TIME,7),[2,3,4,1]),'--')
+plot(10:TIME, permute(T_belief(2,CHINA,10:TIME,10),[2,3,4,1]),'--')
+legend('Productivity','Belief at t=1','Belief at t=5','Belief at t=10','location','best')
+saveas(gcf,'figures/prod_and_belief_sec2.png')
 
 %nonlinear perfect foresight
 v_td = eqm_nlpf_HAT.v_td;
@@ -362,8 +360,8 @@ saveas(gcf,'figures/recur_labor_agg_TEX.png')
 figure
 hold on
 title('RECURSIVE: Labor in California (sector 1)')
-plot(1:TIME-1,permute(eqm_nlpf_HAT.Ldyn(1,43,1:TIME-1,1),[3,2,4,1]))
-plot(1:TIME-1,permute(Ldyn_dgp(1,43,1:TIME-1),[3,2,1]))
+plot(1:TIME-1,permute(eqm_nlpf_HAT.Ldyn(1,5,1:TIME-1,1),[3,2,4,1]))
+plot(1:TIME-1,permute(Ldyn_dgp(1,5,1:TIME-1),[3,2,1]))
 plot(1:TIME-1,permute(L_belief_recur(1,5,1:TIME-1,1),[3,2,4,1]),':')
 plot(1:TIME-1,permute(L_belief_dgp(1,5,1:TIME-1,1),[3,2,4,1]))
 plot(1:TIME-1,permute(L_pf_recur(1,5,1:TIME-1,1),[3,2,4,1]),'--')

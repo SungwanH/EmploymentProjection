@@ -59,7 +59,6 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
         kappa_temp = kappa_hat(:,:,t);
         for j=1:J
             for n=1:N
-%                RHS(j,n) = pi_aux(n+(j-1)*N,:)*(B(j,:).*w_temp(j,:) + TAU(n+(j-1)*N,:) - (1/THETA(j)) .* T_temp(j,:))'; 
                 RHS(j,n) = pi_aux(n+(j-1)*N,:)*(GAMMA(j,:).*w_temp(j,:) + kappa_temp(n+(j-1)*N,:) - (1/THETA(j)) .* T_temp(j,:))'; 
             end
         end
@@ -75,21 +74,7 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
         end
         p_hat(:,:,t) = p_temp;
     end
-    %{
-    for t = t1:TIME
-        w_temp = w_hat(:,:,t);
-    pi_temp = pi(:,:,t);
-    p_temp = p_hat(:,:,t);
-    kappa_temp = kappa_hat(:,:,t);
-    T_temp = T_hat(:,:,t);
-        for j=1:1:J
-            for n=1:1:N
-            pnew(j,n)=pi_temp(n+(j-1)*N,:)*(GAMMA(j,:).*w_temp(j,:) + (1-GAMMA(j,:)).*p_temp(j,:) + kappa_temp(n+(j-1)*N,:) - (1/THETA(j))*T_temp(j,:))'; 
-            end              
-        end
-    p_hat(:,:,t) = pnew;
-    end
-    %}
+
     %price index
     for t=t1:TIME
         P_hat(:,:,t) = sum((ALPHAS.*p_hat(:,:,t)),1);
@@ -98,10 +83,8 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
     for t = t1:TIME
         for n=1:N
             for j=1:J
-%                for ii=1:N
-%                    pi_hat(n+(j-1)*N,ii,t) = -THETA(j)*(B(j,ii) * w_hat(j,ii,t) - (1-B(j,ii)*p_hat(j,ii,t)) + TAU(n+(j-1)*N,ii)) + T_hat(j,ii,t);
-                    pi_hat(n+(j-1)*N,:,t) = -THETA(j)*(GAMMA(j,:) .* w_hat(j,:,t) + (1-GAMMA(j,:)).*p_hat(j,:,t) - p_hat(j,n,t) - kappa_hat(n+(j-1)*N,:,t)) + T_hat(j,:,t);
-%                end
+%               pi_hat(n+(j-1)*N,ii,t) = -THETA(j)*(B(j,ii) * w_hat(j,ii,t) - (1-B(j,ii)*p_hat(j,ii,t)) + TAU(n+(j-1)*N,ii)) + T_hat(j,ii,t);
+                pi_hat(n+(j-1)*N,:,t) = -THETA(j)*(GAMMA(j,:) .* w_hat(j,:,t) + (1-GAMMA(j,:)).*p_hat(j,:,t) - p_hat(j,n,t) - kappa_hat(n+(j-1)*N,:,t)) + T_hat(j,:,t);
              end
          end
     end        
@@ -157,10 +140,10 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
 
     for t=t1:TIME
         checkw(t,1)=max(max(abs(w_hat(:,:,t)-w_update(:,:,t))));
+%    checkw(t,1) = norm((w_update(:,t) - w_hat(:,t))./w_update(:,t),1);
     end
     [wmax loc]=max(checkw);
     wmax;
-    
     if ITER_TEMP >3000 || sum(isnan(w_update(:)))>0
         checkw(t1:TIME)
         t1

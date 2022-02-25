@@ -99,6 +99,7 @@ end
 
 for t=t1:TIME
     checkV(t,1)=max(abs(v_hat_update(:,t)-v_hat(:,t)));
+%    checkV(t,1) = norm((v_hat_update(:,t) - v_hat(:,t))./(v_hat_update(:,t)),1);
 end
 VMAX=max(checkV)
     if ITER_DYN >1000 || sum(isnan(v_hat_update(:)))>0

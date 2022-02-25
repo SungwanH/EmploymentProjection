@@ -14,23 +14,17 @@ if SS==1
     [VV,D] = eig(mu0(:,:));
     mu0 = real(VV * (D)^8 * inv(VV));
     
-    L00 = zeros(R*J,1);
-    for n=1:R
-        for j=1:J
-            L00(j+(n-1)*J,1) = L0(j,n);
-        end
-    end
+    L00 =L0(:);
+        
     % start from steady state
     for i=1:500
         L00 =  mu0'*L00;
     end
-    for n=1:R
-        for j=1:J
-            L0(j,n) = L00(j+(n-1)*J,1);
-        end
-    end
     
+    L0=reshape(L00,J,R);
+   
     T_BASE       =   params.prod.T_BASE; % Define productivity
+    T_hat = ones(J,N,TIME);
     for t=1:TIME-1
         T_hat(:,:,t+1)=T_BASE(:,:,t+1)./T_BASE(:,:,t); %relative change in technology (US: 2 for all period, CHINA: 1 for all period)
     end
@@ -43,7 +37,8 @@ else
     mu0 = approx_nlpf_HAT_SS.mu(:,:,TIME_SS);
     clear eqm_nlpf_HAT_SS
     clear approx_nlpf_HAT_SS
-    
+
+    T_hat = ones(J,N,TIME);
     for t=1:TIME-1
         T_hat(:,:,t+1)=T(:,:,t+1)./T(:,:,t); %relative change in technology (CHINA is catching up here)
     end
@@ -51,20 +46,6 @@ else
     load('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT'); %one-shot convergence
     v_td(:,1:TIME) = eqm_nlpf_HAT.v_td(:,1:TIME);
 end
-
-% run the model once to match the initial data with our setting
-w_guess = ones(J,N); %initial guess for wage
-p_guess = ones(J,N); %initial guess for good prices
-kappa_hat=ones(J*N,N); % relative change in trade cost
-
-load('DATA/BASE_FOURSECTOR.mat', 'VALjn00', 'Din00')
-VALjn00 = VALjn00*8; % bi-annual
-Ljn_hat00 = ones(J,N);
-T_hat00  = ones(J,N);
-[~, ~, ~, Din00_matched, ~, VALjn00_matched] = NLPF_TEMP_HAT(params, VALjn00, Din00, kappa_hat, T_hat00, Ljn_hat00, w_guess, p_guess);
-% update the initial values                                                
-VALjn0=VALjn00_matched; %Labor compensation (w*L)
-Din0=Din00_matched; %bilateral trade shares
 
 %%%%%%%%%Algorithm%%%%%%%%%%%%%
 %%%Dynamic problem%%%
@@ -100,7 +81,7 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
         den=den*ones(1,R*(J));
         mu(:,:,t+1)=num./den;  %this is mu(t+1)
     end
-    
+   
     %Solving for the path of employment
     L00=reshape(L0,J,R);
     L00_aux2=reshape(L00,R*(J),1);
@@ -119,9 +100,22 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
         Ldyn(:,:,t+1)=reshape(aux5,J,R);   %this is the path for employment
     end
     %Ldyn(:,:,TIME)=0;
-     
+    % run the model once to match the initial data with our setting
+    w_guess = ones(J,N); %initial guess for wage
+    p_guess = ones(J,N); %initial guess for good prices
+    kappa_hat=ones(J*N,N); % relative change in trade cost
+    
+    load('DATA/BASE_FOURSECTOR.mat', 'VALjn00', 'Din00')
+    VALjn00 = VALjn00*8; % bi-annual
+    Ljn_hat00 = ones(J,N);
+    T_hat00  = ones(J,N);
+    [~, ~, ~, Din00_matched, ~, VALjn00_matched] = NLPF_TEMP_HAT(params, VALjn00, Din00, kappa_hat, T_hat00, Ljn_hat00, w_guess, p_guess);
+    % update the initial values                                                
+    VALjn0=VALjn00_matched; %Labor compensation (w*L)
+    Din0=Din00_matched; %bilateral trade shares
     %%%%Temporary Equilibrium%%%%%  
     Ltemp=Ldyn;   %path of employment
+
     realwages=ones(J,R+C,TIME);  %real wages. This matrix will store equilibrium real wages from the temporary equilibrium at each time t
     
     %static sub-problem at each time t
@@ -129,10 +123,9 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
         disp(t);
         %Shocks
         T_temp = T_hat(:,:,t+1); 
-    
         Ljn_hat=ones(J,N); %change in employment in the US
         Ljn_hat(:,1:R)=Ltemp(:,:,t+1)./Ltemp(:,:,t);
-    
+        
         [wf0, pf0, Pf0, pi_temp, X_temp, VALjn] = NLPF_TEMP_HAT(params, VALjn0, Din0, kappa_hat, T_temp, Ljn_hat, w_guess, p_guess);
         wf00(:,:,t) = wf0;
         pf00(:,:,t) = pf0;
@@ -204,7 +197,8 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     %Excess function
     check=zeros(TIME,1); 
     for t=2:TIME
-        checkY(t,1)=max(abs(Ynew(:,t)-v_td(:,t)));
+%        checkY(t,1)=max(abs(Ynew(:,t)-v_td(:,t)));
+        checkY(t,1)=max(abs(log(Ynew(:,t))-log(v_td(:,t))));
     end
     Ymax=max(checkY)
     
