@@ -18,14 +18,15 @@ v2struct(approx_nlpf)
 % Belief on productivity
 T_belief = BELIEF(params, W);% belief on productivities
 E_T_hat = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
-for tt=1:TIME
+for tt=1:ENDT+1
     for j=1:J
-         E_T_hat(CHINA,:,tt) = (T_belief(CHINA,:,tt)-T(CHINA,:))./(T(CHINA,:));
+        E_T_hat(j,CHINA,:,tt) = log(T_belief(j,CHINA,:,tt)) - log(T(j,CHINA,:));
     end
 end
-%for tt=1:ENDT+1
+% Percentage deviation
+%for tt=1:TIME
 %    for j=1:J
-%        E_T_hat(j,CHINA,:,tt) = log(T_belief(j,CHINA,:,tt)) - log(T(j,CHINA,:));
+%         E_T_hat(j,CHINA,:,tt) = (T_belief(j,CHINA,:,tt)-T(j,CHINA,:))./(T(j,CHINA,:));
 %    end
 %end
 

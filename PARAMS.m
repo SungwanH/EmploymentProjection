@@ -18,8 +18,8 @@ GAMMA      = gamma; % share of labor in production
 clear alphas
 clear T
 %THETA   = 5; %trade elasticity
-%NU      = 5.3436; %dispersion of taste shocks (In CDP: 5.3436)
-NU      = 3; %dispersion of taste shocks (In CDP: 5.3436)
+NU      = 5.3436; %dispersion of taste shocks (In CDP: 5.3436)
+%NU      = 3; %dispersion of taste shocks (In CDP: 5.3436)
 %BETA    = 0.9605; %discount rate (0.99^4: transformed from quarterly to yearly)
 BETA    = 0.9227; %discount rate (0.99^8: transformed from quarterly to bi-annual)
 
@@ -45,10 +45,10 @@ UPDT_V      = 0.3; %update speed for value loop (lower value->conservative)
 UPDT_W      = 0.3; %update speed for wage loop (lower value->conservative)
 UPDT_V_NL   = 0.5; %update speed for nonlinear value loop (lower value->conservative)
 UPDT_W_NL   = 0.3; %update speed for nonlinear wage loop (lower value->conservative)
-TOL_NL      = 1E-6;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
-TOL_NL_TEMP = 1E-6;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
-TOLDYN      = 1E-6;  %tolerance rate for linear dynamic equilibrium
-TOLTEMP     = 1E-6;  % tolerance rate for linear temporary equilibrium
+TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
+TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
+TOLDYN      = 1E-7;  %tolerance rate for linear dynamic equilibrium
+TOLTEMP     = 1E-7;  % tolerance rate for linear temporary equilibrium
 MAXIT       = 1E+8; %maximum number of iterations
 
 
