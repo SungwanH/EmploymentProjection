@@ -45,10 +45,10 @@ UPDT_V      = 0.3; %update speed for value loop (lower value->conservative)
 UPDT_W      = 0.3; %update speed for wage loop (lower value->conservative)
 UPDT_V_NL   = 0.5; %update speed for nonlinear value loop (lower value->conservative)
 UPDT_W_NL   = 0.3; %update speed for nonlinear wage loop (lower value->conservative)
-TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
-TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
-TOLDYN      = 1E-7;  %tolerance rate for linear dynamic equilibrium
-TOLTEMP     = 1E-7;  % tolerance rate for linear temporary equilibrium
+TOL_NL      = 1E-6;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
+TOL_NL_TEMP = 1E-6;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
+TOLDYN      = 1E-6;  %tolerance rate for linear dynamic equilibrium
+TOLTEMP     = 1E-6;  % tolerance rate for linear temporary equilibrium
 MAXIT       = 1E+8; %maximum number of iterations
 
 
