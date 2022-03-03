@@ -26,13 +26,6 @@ BETA    = 0.9227; %discount rate (0.99^8: transformed from quarterly to bi-annua
 TAU     = ones(N*J,N); %iceberg trade cost
 %TAU     = (ones(N,N)-eye(N)).*(1+rand(N))+eye(N);
 
-% Baseline productivity (Used in deriving initial steady state)
-T_BASE = ones(J,N,TIME*3)*2; % US (& other countries except China) productivity is constant for all period
-T_BASE(1:J,CHINA,2:TIME*3) = 1;
-
-%Previous productivity of China (used in estimating RHO and MU)
-T_PREV = repmat(linspace(0.97,0.99,20),4,1); %Assume previous 20 periods' CHINA productivity was from 0.97 to 0.99
-
 
 % Baseline: RHO 0.85 ENDT 20
 SIGMA   = 0.01; % s.d. of catch-up
@@ -62,8 +55,29 @@ MAXIT       = 1E+8; %maximum number of iterations
 params.envr   = v2struct(TIME, TIME_SS, N, R, C, J, US, CHINA, TAU, ENDT, ENDT_SAMPLE, ENDT_DGP, EPST);
 params.modl   = v2struct(THETA, NU, BETA, ALPHAS, THETA, GAMMA);
 params.tech   = v2struct(ESTM_BOTH, UPDT_V, UPDT_W, UPDT_V_NL, UPDT_W_NL, TOL_NL, TOL_NL_TEMP, TOLDYN, TOLTEMP, MAXIT);
-            params.prod   = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO, W_TRUE);
-T = PRODUCTIVITY_DGP(params); %objective productivity
-params.prod.T = T;
+
+
+%% Productivity
+% Baseline productivity (Used in deriving initial steady state)
+T_BASE = ones(J,N,TIME*3)*2; % US (& other countries except China) productivity is constant for all period
+T_BASE(1:J,CHINA,2:TIME*3) = 1;
+%Previous productivity of China (used in estimating RHO and MU)
+T_PREV = repmat(linspace(0.97,0.99,20),4,1); %Assume previous 20 periods' CHINA productivity was from 0.97 to 0.99
+params.prod   = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO, W_TRUE);
+
+T = PRODUCTIVITY_DGP(params); %objective productivity (in level)
+
+
+T_HAT_SS = ones(J,N,TIME_SS);
+T_HAT = ones(J,N,TIME);
+for t=1:TIME_SS-1
+    T_HAT_SS(:,:,t+1)=T_BASE(:,:,t+1)./T_BASE(:,:,t); %relative change in technology (US: 2 for all period, CHINA: 1 for all period except the first period)
+end
+for t=1:TIME-1
+    T_HAT(:,:,t+1)=T(:,:,t+1)./T(:,:,t); %relative change in technology (CHINA is catching up here)
+end
+
+
+params.prod   = v2struct(T_BASE, T_PREV, T, T_HAT, T_HAT_SS, MU, SIGMA, RHO, W_TRUE);
 
 end

@@ -70,7 +70,7 @@ while (ITER_TEMP <= MAXIT) && ((wfmax > TOL_NL_TEMP) || (pfmax > TOL_NL_TEMP))  
     end
 
     
-    % step 3: Solve for expenditure share (by taking inverse)
+    % step 3: Solve for total expenditure (by taking inverse)
 
     % for given j, 
     % A*X = RHS

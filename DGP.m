@@ -18,16 +18,16 @@ v2struct(approx_nlpf)
 % Belief on productivity
 T_belief = BELIEF(params, W);% belief on productivities
 E_T_hat = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
-%for tt=1:TIME
-%    for j=1:J
-%         E_T_hat(CHINA,:,tt) = (T_belief(CHINA,:,tt)-T(CHINA,:))./(T(CHINA,:));
-%    end
-%end
-for tt=1:ENDT+1
+for tt=1:TIME
     for j=1:J
-        E_T_hat(j,CHINA,:,tt) = log(T_belief(j,CHINA,:,tt)) - log(T(j,CHINA,:));
+         E_T_hat(CHINA,:,tt) = (T_belief(CHINA,:,tt)-T(CHINA,:))./(T(CHINA,:));
     end
 end
+%for tt=1:ENDT+1
+%    for j=1:J
+%        E_T_hat(j,CHINA,:,tt) = log(T_belief(j,CHINA,:,tt)) - log(T(j,CHINA,:));
+%    end
+%end
 
 % period by period equilibrium
 % Initialize
@@ -45,13 +45,13 @@ for t1=1:ENDT+1
     tic
     if t1 ==1 
          V = zeros(R*J,TIME); %initial value for v_hat
-%         W = zeros(J,N,TIME);
+         W = zeros(J,N,TIME);
     end
-    [eqm_temp] = PBP_DYN(params, t1, t1, E_T_hat, kappa_hat, L, V, approx_nlpf);
+    [eqm_temp] = PBP_DYN(params, t1, t1, E_T_hat, kappa_hat, L, V, W, approx_nlpf);
                       
     L = eqm_temp.L(:,t1+1); % update the initial value of labor 
     V = eqm_temp.v; % update the initial value of V
-%    W = eqm_temp.w(:,:,t1+1); % update the initial value of wage
+    W = eqm_temp.w; % update the initial value of wage
     %save the belief path
     w_hat(:,:,:,t1) = eqm_temp.w;
     p_hat(:,:,:,t1) = eqm_temp.p;
@@ -111,7 +111,6 @@ pf00 = exp(p_dgp) .* eqm_nlpf.pf00;
 VALjn00(1:J,1:R,1:TIME)   = exp(w_dgp(1:J,1:R,1:TIME))  .* exp(L_dgp(1:J,1:R,1:TIME)) .* eqm_nlpf.VALjn00(1:J,1:R,1:TIME);
 VALjn00(1:J,R+1:N,1:TIME) = exp(w_dgp(1:J,R+1:N,1:TIME)).* eqm_nlpf.VALjn00(1:J,R+1:N,1:TIME); % L_hat for non-US is zero
 
-
 varrho = zeros(N*J,N,TIME);
 zeta = zeros(N*J,J,TIME);
 chi = zeros(N*J,N,TIME);
@@ -135,25 +134,21 @@ for t=1:TIME
         end
     end
 end
-for t=1:TIME-1
+for t=1:TIME
     for k=1:J
         for ii=1:R
             for j=1:J
                 for n=1:R
-                    lambda(k+(ii-1)*J,j+(n-1)*J,t) = mu(k+(ii-1)*J,j+(n-1)*J,t)*Ldyn(k,ii,t)/Ldyn(j,n,t);
+                    if t==1
+                        lambda(k+(ii-1)*J,j+(n-1)*J,1) = mu(k+(ii-1)*J,j+(n-1)*J,1)*Ldyn(k,ii,1)/Ldyn(j,n,1);
+                    else
+                        lambda(k+(ii-1)*J,j+(n-1)*J,t) = mu(k+(ii-1)*J,j+(n-1)*J,t-1)*Ldyn(k,ii,t-1)/Ldyn(j,n,t);
+                    end
                 end
             end
         end
     end
 end
-%normalize 
-%{
-for t=1:TIME
-    for i=1:R*J
-        lambda(:,i,t) =    lambda(:,i,t)./sum(sum(lambda(:,i,t)));
-    end
-end
-%}
 
 %save the outputs
 eqm_dgp   = v2struct(Ldyn, L_belief_dgp, L_hat, v_hat, w_hat, p_hat, P_hat, pi_hat, mu_hat, X_hat, E_T_hat, ...

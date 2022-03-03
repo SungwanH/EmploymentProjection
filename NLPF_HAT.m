@@ -1,51 +1,13 @@
-function [eqm_nlpf_HAT,approx_nlpf_HAT] = NLPF_HAT(params, SS)
+function [eqm_nlpf_HAT,approx_nlpf_HAT] = NLPF_HAT(params, initial, SS)
 % Non-linear baseline perefect foresight equilibrium
 % 50 regions + 37 other countries
 %% Roll down parameters
 v2struct(params.envr);
 v2struct(params.tech);
 v2struct(params.modl);
-T   =   params.prod.T;
 
-if SS==1
-    TIME = params.envr.TIME_SS;
-    load('DATA/BASE_FOURSECTOR.mat','mu0','L0')    
-    %Change to Biannual basis
-    [VV,D] = eig(mu0(:,:));
-    mu0 = real(VV * (D)^8 * inv(VV));
-    
-    L00 =L0(:);
-        
-    % start from steady state
-    for i=1:500
-        L00 =  mu0'*L00;
-    end
-    
-    L0=reshape(L00,J,R);
-   
-    T_BASE       =   params.prod.T_BASE; % Define productivity
-    T_hat = ones(J,N,TIME);
-    for t=1:TIME-1
-        T_hat(:,:,t+1)=T_BASE(:,:,t+1)./T_BASE(:,:,t); %relative change in technology (US: 2 for all period, CHINA: 1 for all period)
-    end
-    v_td=ones(R*(J),TIME); %Initial guess for the Ys (exp(Vt+1-V)^1/NU)
-    load('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS'); %one-shot convergence
-    v_td(:,1:length(eqm_nlpf_HAT_SS.v_td)) = eqm_nlpf_HAT_SS.v_td(:,1:length(eqm_nlpf_HAT_SS.v_td));
-else
-    load('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS', 'approx_nlpf_HAT_SS');
-    L0 = eqm_nlpf_HAT_SS.Ldyn(:,:,TIME_SS);
-    mu0 = approx_nlpf_HAT_SS.mu(:,:,TIME_SS);
-    clear eqm_nlpf_HAT_SS
-    clear approx_nlpf_HAT_SS
-
-    T_hat = ones(J,N,TIME);
-    for t=1:TIME-1
-        T_hat(:,:,t+1)=T(:,:,t+1)./T(:,:,t); %relative change in technology (CHINA is catching up here)
-    end
-    v_td=ones(R*(J),TIME); %Initial guess for the Ys (exp(Vt+1-V)^1/NU)
-    load('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT'); %one-shot convergence
-    v_td(:,1:TIME) = eqm_nlpf_HAT.v_td(:,1:TIME);
-end
+%% Roll down initial values
+v2struct(initial);
 
 %%%%%%%%%Algorithm%%%%%%%%%%%%%
 %%%Dynamic problem%%%
@@ -122,7 +84,7 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     for t=1:TIME-2
         disp(t);
         %Shocks
-        T_temp = T_hat(:,:,t+1); 
+        T_temp = T_HAT(:,:,t+1); 
         Ljn_hat=ones(J,N); %change in employment in the US
         Ljn_hat(:,1:R)=Ltemp(:,:,t+1)./Ltemp(:,:,t);
         
@@ -138,7 +100,6 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
         %updating the initial conditions
         VALjn0=VALjn;
         Din0=pi_temp;
-     
      
         %storing equilibrium real wages
         realwages(:,:,t+1)=wf0(:,:)./(ones(J,1)*Pf0);
@@ -236,7 +197,11 @@ for t=1:TIME-2
         for ii=1:R
             for j=1:J
                 for n=1:R
-                    lambda(k+(ii-1)*J,j+(n-1)*J,t) = mu(k+(ii-1)*J,j+(n-1)*J,t)*Ldyn(k,ii,t)/Ldyn(j,n,t);
+                    if t==1
+                        lambda(k+(ii-1)*J,j+(n-1)*J,1) = mu(k+(ii-1)*J,j+(n-1)*J,1)*Ldyn(k,ii,1)/Ldyn(j,n,1);
+                    else
+                        lambda(k+(ii-1)*J,j+(n-1)*J,t) = mu(k+(ii-1)*J,j+(n-1)*J,t-1)*Ldyn(k,ii,t-1)/Ldyn(j,n,t);
+                    end
                 end
             end
         end
@@ -255,11 +220,11 @@ VALjn00(:,:,t) = VALjn00(:,:,TIME-2);
 X(:,:,t) = X(:,:,TIME-2);
 end
 %normalize
-for t=1:TIME
-    for i=1:R*J
-        lambda(:,i,t) =    lambda(:,i,t)./sum(sum(lambda(:,i,t)));
-    end
-end
+%for t=1:TIME
+%    for i=1:R*J
+%        lambda(:,i,t) =    lambda(:,i,t)./sum(sum(lambda(:,i,t)));
+%    end
+%end
 
 
 if SS==1

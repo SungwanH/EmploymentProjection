@@ -1,8 +1,8 @@
-function [eqm] = PBP_DYN(params, t1, t2, E_T_hat, kappa_hat, L, V, approx)
+function [eqm] = PBP_DYN(params, t1, t2, E_T_hat, kappa_hat, L, V, W, approx)
 % Period by period equilibrium
 % At every period t1, the perceived path of the shock in fundamental
 % (E_T_hat) is updated
-% For given L(t1) and the approximation matrices (mu, lambda, s),
+% For given L(t1) and the approximation matrices (mu, lambda, chi, varrho, zeta, pi),
 % we can solve the expected path of (deviation from SS of) mu, v, L 
 % and take those of t1 period outcome.
 %%%%%%%%%Algorithm%%%%%%%%%%%%%
@@ -28,22 +28,10 @@ MAXIT   =   params.MAXIT;
 mu      =   approx.mu;
 lambda  =   approx.lambda;
 
-%t1: starting period 
-
 T_hat = E_T_hat(:,:,:,t2); %belief at t2 period
 
 v_hat = zeros(R*J,TIME);
 v_hat(:,t1:TIME) = V(:,t1:TIME); % initial value
-W = zeros(J,N,TIME);
-%w_hat(:,t1:TIME) = W(:,t1:TIME);
-%W = zeros(J,N,TIME);
-%for t=1:TIME
-%    for j=1:J
-%        for n=1:N
-%            W(j,n,t) = W_NJ(n+(j-1)*N,t);
-%        end
-%    end
-%end
 
 L_hat = zeros(R*J,TIME);
 p_hat = zeros(R*J,TIME);
@@ -65,25 +53,23 @@ for t =t1:TIME-1
 end
 
 % Step 3. given mu_hat, solve for the path of labor(L_hat)
+% L(nj)_t+1 = lambda(ik,nj)_t+1 * (mu(ik,nj)_t + L(ik)_t)
 L_hat(:,t1) = L;
 for t = t1:TIME-1
-        lambda_aux = lambda(:,:,t);
+    lambda_aux = lambda(:,:,t+1);
     for i = 1:R*J
-%        L_hat(i,t+1) = lambda_aux(:,i)'*(mu_hat(:,i,t) + L_aux(:,1,t));
-%        L_hat(:,t+1) = lambda_aux'*mu_hat(:,:,t) + lambda_aux' * L_hat(:,t);
-% should it be mu(t+1) or mu(t)?
+%    L_hat(:,t+1) = sum(lambda_aux.*mu_hat(:,:,t),1)' + lambda_aux' * L_hat(:,t);
         L_hat(i,t+1) = lambda_aux(:,i)'*mu_hat(:,i,t) + lambda_aux(:,i)' * L_hat(:,t);
     end
 end
 
-% Step 4. Inner loop (solves w, P, pi)
-%%%Temporary problem (=Trade equilibrium)%%%
+% Step 4. Inner loop (Temporary problem: solves w, P, pi)
 [w_hat, p_hat, P_hat, pi_hat, X_hat] = PBP_TEMP(params, t1, T_hat, kappa_hat, W, L_hat, approx);
-W= w_hat;
+W= w_hat; % will be used as next period's initial value
 for t=t1:TIME
     rw_hat(:,:,t) = w_hat(:,:,t) - ones(J,1)*P_hat(:,:,t); %real wage
 end
-rw_hat_RJ = reshape(rw_hat(:,1:R,:),[R*J,TIME]);
+rw_hat_RJ = reshape(rw_hat(:,1:R,:),[R*J,TIME]); 
 % Step 5. solve for a new path of v_hat
 v_hat_update = zeros(R*J,TIME);
 %v_hat_SS(:,1) = (eye(R*J) - BETA * mu(:,:,TIME))\(w_hat_RJ(1:R*J,TIME) - P_hat(1:R*J,TIME));
@@ -92,8 +78,6 @@ v_hat_update(:,TIME) = v_hat_SS;
 
 for t=TIME-1:-1:t1 
     mu_aux = mu(1:R*J,1:R*J,t);
-    % here p_hat should be p_hat (R) not R*J 
-%    v_hat_update(:,t) = w_hat_RJ(:,t) - p_hat_RJ(:,t) + BETA * mu_aux(:,:)*v_hat_update(:,t+1);
     v_hat_update(:,t) = rw_hat_RJ(:,t) + BETA * mu_aux(:,:)*v_hat_update(:,t+1);
 end
 
