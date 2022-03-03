@@ -10,25 +10,10 @@ function [eqm_dgp, approx_dgp] = DGP(params, W, eqm_nlpf, approx_nlpf)
 
 %% Roll down parameters
 v2struct(params.envr)
-T = params.prod.T;
+E_T_hat = params.prod.E_T_hat;      % Belief on productivity (deviation from T)
 %% Roll down Baseline outcomes
 v2struct(eqm_nlpf)
 v2struct(approx_nlpf)
-
-% Belief on productivity
-T_belief = BELIEF(params, W);% belief on productivities
-E_T_hat = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
-for tt=1:ENDT+1
-    for j=1:J
-        E_T_hat(j,CHINA,:,tt) = log(T_belief(j,CHINA,:,tt)) - log(T(j,CHINA,:));
-    end
-end
-% Percentage deviation
-%for tt=1:TIME
-%    for j=1:J
-%         E_T_hat(j,CHINA,:,tt) = (T_belief(j,CHINA,:,tt)-T(j,CHINA,:))./(T(j,CHINA,:));
-%    end
-%end
 
 % period by period equilibrium
 % Initialize

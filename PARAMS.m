@@ -66,8 +66,7 @@ T_PREV = repmat(linspace(0.97,0.99,20),4,1); %Assume previous 20 periods' CHINA 
 params.prod   = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO, W_TRUE);
 
 T = PRODUCTIVITY_DGP(params); %objective productivity (in level)
-
-
+% Derive Time difference productivity
 T_HAT_SS = ones(J,N,TIME_SS);
 T_HAT = ones(J,N,TIME);
 for t=1:TIME_SS-1
@@ -77,7 +76,37 @@ for t=1:TIME-1
     T_HAT(:,:,t+1)=T(:,:,t+1)./T(:,:,t); %relative change in technology (CHINA is catching up here)
 end
 
+params.prod   = v2struct(MU, SIGMA, RHO, W_TRUE, T_BASE, T_PREV, T, T_HAT, T_HAT_SS);
 
-params.prod   = v2struct(T_BASE, T_PREV, T, T_HAT, T_HAT_SS, MU, SIGMA, RHO, W_TRUE);
+% Derive productivity belief log deviation from objective productivity
+T_belief = BELIEF(params, W_TRUE);
+E_T_hat = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
+for tt=1:ENDT+1
+    for j=1:J
+        E_T_hat(j,CHINA,:,tt) = log(T_belief(j,CHINA,:,tt)) - log(T(j,CHINA,:));
+    end
+end
+% perfect foresight deviation from belief
+E_T_hat_pf = zeros(J,N,TIME,ENDT+1);
+for tt=1:ENDT+1
+    for j=1:J
+       E_T_hat_pf(j,CHINA,:,tt) = -log(T_belief(j,CHINA,:,tt)) + log(T(j,CHINA,:));
+    end
+end
+% Percentage deviation
+%E_T_hat = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
+%for tt=1:ENDT+1
+%    for j=1:J
+%         E_T_hat(j,CHINA,:,tt) = (T_belief(j,CHINA,:,tt)-T(j,CHINA,:))./(T(j,CHINA,:));
+%    end
+%end
+%E_T_hat_pf = zeros(J,N,TIME,ENDT+1);
+%for tt=1:ENDT+1
+%    for j=1:J
+%         E_T_hat_pf(j,CHINA,:,tt) = (T(j,CHINA,:)-T_belief(j,CHINA,:,tt))./(T_belief(j,CHINA,:,tt));
+%    end
+%end
+% add deviation variables 
+params.prod   = v2struct(MU, SIGMA, RHO, W_TRUE, T_BASE, T_PREV, T, T_HAT, T_HAT_SS, E_T_hat, E_T_hat_pf);
 
 end

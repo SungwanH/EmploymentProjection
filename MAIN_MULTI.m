@@ -4,22 +4,17 @@ close all
 clc;
 digits(50)
 
-
 % call parameters
 params=PARAMS();
 v2struct(params.envr);
 v2struct(params.modl);
 v2struct(params.prod);
 
-%RUN_NLPF_SS    = 1;
-%RUN_NLPF       = 1; 
 RUN_NLPF_HAT_SS = 1; 
 RUN_NLPF_HAT    = 1; 
 RUN_DGP         = 1; 
 RUN_RECUR       = 1;
 
-%Productivity and belief
-T_belief = BELIEF(params, W_TRUE);
 
 %% Obtain non-linear level outcome in HAT (Obtain initial Steady State)
 if RUN_NLPF_HAT_SS ==1
@@ -56,7 +51,6 @@ end
 if RUN_NLPF_HAT ==1
     disp('#################')
     disp('Running NLPF_HAT')
-    %load('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS', 'approx_nlpf_HAT_SS');
     L0 = eqm_nlpf_HAT_SS.Ldyn(:,:,TIME_SS);
     mu0 = approx_nlpf_HAT_SS.mu(:,:,TIME_SS);
     %clear eqm_nlpf_HAT_SS

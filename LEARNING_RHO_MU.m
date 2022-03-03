@@ -5,7 +5,6 @@ v2struct(params.prod);
 v2struct(params.envr);
 v2struct(params.tech);
 
-
 RHO_OLS = zeros(J,TIME);
 MU_OLS  = zeros(J,TIME);
 RHO_OLS(:,:) = RHO;

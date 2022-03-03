@@ -4,18 +4,7 @@ function T = PRODUCTIVITY_DGP(params)
 %% Roll down parameters
 v2struct(params.prod);
 v2struct(params.envr);
-%{
-N      =   params.N;
-J      =   params.J;
-T_BASE =   params.T_BASE;
-ENDT   =   params.ENDT;
-EPST   =   params.EPST;
-TIME   =   params.TIME;
-RHO    =   params.RHO;
-MU     =   params.MU;
-CHINA  =   params.CHINA;
-US     =   params.US;
-%}
+
 % Initialize productivity
 T = T_BASE(:,:,1:TIME);
 T(:,CHINA,1:TIME) = 1;

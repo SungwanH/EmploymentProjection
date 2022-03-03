@@ -2,19 +2,6 @@ function [wf0, pf0, Pf0, Dinp, X, VALjn] = NLPF_TEMP_HAT(params, VALjn0, Din, ka
 % This function solves temporary equilibrium given Labor.
 % Updates price and wage simultaneously but at a different speed
 %% Roll down parameters
-%{
-N       =   params.envr.N;
-R       =   params.envr.R;
-C       =   params.envr.C;
-J       =   params.envr.J;
-TIME    =   params.envr.TIME;
-GAMMA       =   params.modl.GAMMA;
-THETA   =   params.modl.THETA;
-ALPHAS  =   params.modl.ALPHAS;
-CHINA   =   params.envr.CHINA;
-T       =   params.prod.T;
-TAU     =   params.envr.TAU;
-%}
 v2struct(params.tech)
 v2struct(params.envr)
 v2struct(params.modl)
@@ -107,7 +94,6 @@ while (ITER_TEMP <= MAXIT) && ((wfmax > TOL_NL_TEMP) || (pfmax > TOL_NL_TEMP))  
     w_new = (GAMMA.*sumpiX)./ (Ljn_hat .*VALjn0);
 
     %update p and w     
-%    pfdev    = abs(phat - pf0); % Checking tolerance
 %    pfdev2    = norm((phat - pf0)./(pf0),1);
     pfdev    = log(phat) - log(pf0);
     pf0      = phat;
@@ -127,7 +113,5 @@ VALjn = VALjn0 .* (wf0 .* Ljn_hat);
 %disp('Number of iteration')
 %disp(ITER_TEMP)
 %sum(L(:))
-%sum(sum(wf0./pf0))
-
 
 end
