@@ -28,12 +28,12 @@ TAU     = ones(N*J,N); %iceberg trade cost
 
 
 % Baseline: RHO 0.85 ENDT 20
-SIGMA   = 0.01; % s.d. of catch-up
-W_TRUE = 0.5; % True weight on RHO when deriving RHO_HAT
-ENDT    = 10; %Last period of learning (PF starts from here)
+SIGMA       = 0.01; % s.d. of catch-up
+W_TRUE      = 0.5; % True weight on RHO when deriving RHO_HAT
+ENDT        = 10; %Last period of learning (PF starts from here)
 ENDT_SAMPLE = 10;
 ENDT_DGP    = 10;
-EPST    = ENDT; %Length of epsilon draw
+EPST        = ENDT; %Length of epsilon draw
 
 % Learning
 RHO     = 0.80; % catch-up speed (Higher RHO -> slower catch-up)
@@ -41,20 +41,20 @@ MU      = 0.15;
 
 % Technical parameters
 ESTM_BOTH   = 1; % if ESTM_BOTH =0, estimate MU only. if =1, estimate both MU and RHO
-UPDT_V      = 0.3; %update speed for value loop (lower value->conservative)
+UPDT_V      = 0.5; %update speed for value loop (lower value->conservative)
 UPDT_W      = 0.3; %update speed for wage loop (lower value->conservative)
 UPDT_V_NL   = 0.5; %update speed for nonlinear value loop (lower value->conservative)
 UPDT_W_NL   = 0.3; %update speed for nonlinear wage loop (lower value->conservative)
-TOL_NL      = 1E-6;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
-TOL_NL_TEMP = 1E-6;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
-TOLDYN      = 1E-6;  %tolerance rate for linear dynamic equilibrium
-TOLTEMP     = 1E-6;  % tolerance rate for linear temporary equilibrium
+TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
+TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
+TOLDYN      = 1E-7;  %tolerance rate for linear dynamic equilibrium
+TOLTEMP     = 1E-7;  % tolerance rate for linear temporary equilibrium
 MAXIT       = 1E+8; %maximum number of iterations
 
 
-params.envr   = v2struct(TIME, TIME_SS, N, R, C, J, US, CHINA, TAU, ENDT, ENDT_SAMPLE, ENDT_DGP, EPST);
-params.modl   = v2struct(THETA, NU, BETA, ALPHAS, THETA, GAMMA);
-params.tech   = v2struct(ESTM_BOTH, UPDT_V, UPDT_W, UPDT_V_NL, UPDT_W_NL, TOL_NL, TOL_NL_TEMP, TOLDYN, TOLTEMP, MAXIT);
+params.envr = v2struct(TIME, TIME_SS, N, R, C, J, US, CHINA, TAU, ENDT, ENDT_SAMPLE, ENDT_DGP, EPST);
+params.modl = v2struct(THETA, NU, BETA, ALPHAS, THETA, GAMMA);
+params.tech = v2struct(ESTM_BOTH, UPDT_V, UPDT_W, UPDT_V_NL, UPDT_W_NL, TOL_NL, TOL_NL_TEMP, TOLDYN, TOLTEMP, MAXIT);
 
 
 %% Productivity
@@ -63,24 +63,24 @@ T_BASE = ones(J,N,TIME*3)*2; % US (& other countries except China) productivity 
 T_BASE(1:J,CHINA,2:TIME*3) = 1;
 %Previous productivity of China (used in estimating RHO and MU)
 T_PREV = repmat(linspace(0.97,0.99,20),4,1); %Assume previous 20 periods' CHINA productivity was from 0.97 to 0.99
-params.prod   = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO, W_TRUE);
+params.prod = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO, W_TRUE);
 
 T = PRODUCTIVITY_DGP(params); %objective productivity (in level)
 % Derive Time difference productivity
 T_HAT_SS = ones(J,N,TIME_SS);
-T_HAT = ones(J,N,TIME);
+T_HAT    = ones(J,N,TIME);
 for t=1:TIME_SS-1
-    T_HAT_SS(:,:,t+1)=T_BASE(:,:,t+1)./T_BASE(:,:,t); %relative change in technology (US: 2 for all period, CHINA: 1 for all period except the first period)
+    T_HAT_SS(:,:,t+1) = T_BASE(:,:,t+1)./T_BASE(:,:,t); %relative change in productivity (US: 2 for all period, CHINA: 1 for all period except the first period)
 end
 for t=1:TIME-1
-    T_HAT(:,:,t+1)=T(:,:,t+1)./T(:,:,t); %relative change in technology (CHINA is catching up here)
+    T_HAT(:,:,t+1) = T(:,:,t+1)./T(:,:,t); %relative change in productivity (CHINA is catching up here)
 end
 
-params.prod   = v2struct(MU, SIGMA, RHO, W_TRUE, T_BASE, T_PREV, T, T_HAT, T_HAT_SS);
+params.prod = v2struct(MU, SIGMA, RHO, W_TRUE, T_BASE, T_PREV, T, T_HAT, T_HAT_SS);
 
 % Derive productivity belief log deviation from objective productivity
 T_belief = BELIEF(params, W_TRUE);
-E_T_hat = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
+E_T_hat  = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
 for tt=1:ENDT+1
     for j=1:J
         E_T_hat(j,CHINA,:,tt) = log(T_belief(j,CHINA,:,tt)) - log(T(j,CHINA,:));
@@ -107,6 +107,6 @@ end
 %    end
 %end
 % add deviation variables 
-params.prod   = v2struct(MU, SIGMA, RHO, W_TRUE, T_BASE, T_PREV, T, T_HAT, T_HAT_SS, E_T_hat, E_T_hat_pf);
+params.prod = v2struct(MU, SIGMA, RHO, W_TRUE, T_BASE, T_PREV, T, T_HAT, T_HAT_SS, T_belief, E_T_hat, E_T_hat_pf);
 
 end

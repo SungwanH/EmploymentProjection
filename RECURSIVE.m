@@ -12,7 +12,7 @@ function eqm_recur = RECURSIVE(params, W, initial, eqm, approx)
 
 v2struct(params.envr);
 v2struct(params.tech);
-E_T_hat = params.prod.E_T_hat;      % Belief on productivity (deviation from T)
+E_T_hat    = params.prod.E_T_hat;      % Belief on productivity (deviation from T)
 E_T_hat_pf = params.prod.E_T_hat_pf;% perfect foresight belief (deviation from T_belief)
 
 %Initial approximation point
@@ -75,26 +75,26 @@ for t2 = ENDT:-1:1 %Perfect Foresight begins from ENDT+1
 %    end
 
     % approximation points are coming from PF
-    [eqm_temp_belief] = PBP_DYN(params, t1, t2, E_T_hat, kappa_hat, L, V, W, approx_pf);
+    [eqm_temp_belief]   = PBP_DYN(params, t1, t2, E_T_hat, kappa_hat, L, V, W, approx_pf);
     
-    L_belief(:,:,:,t1) = reshape(eqm_temp_belief.L,J,R,TIME);
-    w_belief(:,:,:,t1) = eqm_temp_belief.w;
-    p_belief(:,:,:,t1) = eqm_temp_belief.p;
-    X_belief(:,:,:,t1) = eqm_temp_belief.X;
+    L_belief(:,:,:,t1)  = reshape(eqm_temp_belief.L,J,R,TIME);
+    w_belief(:,:,:,t1)  = eqm_temp_belief.w;
+    p_belief(:,:,:,t1)  = eqm_temp_belief.p;
+    X_belief(:,:,:,t1)  = eqm_temp_belief.X;
     pi_belief(:,:,:,t1) = eqm_temp_belief.pi;
     mu_belief(:,:,:,t1) = eqm_temp_belief.mu;
 
     % Append New approximation points from DGP
     % update
     for t=t1:TIME
-        pi(:,:,t)      =  approx_pf.pi(:,:,t)   .* exp(pi_belief(:,:,t,t1)); 
-        mu(:,:,t)      =  approx_pf.mu(:,:,t)   .* exp(mu_belief(:,:,t,t1));
-        X(:,:,t)       =  eqm_pf.X(:,:,t)       .* exp(X_belief(:,:,t,t1));
-        Ldyn(:,:,t)    =  eqm_pf.Ldyn(:,:,t)    .* exp(L_belief(:,:,t,t1));
-        wf00(:,:,t)    =  eqm_pf.wf00(:,:,t)    .* exp(w_belief(:,:,t,t1));
-        pf00(:,:,t)    =  eqm_pf.pf00(:,:,t)    .* exp(p_belief(:,:,t,t1));
-        VALjn00(:,1:R,t) =  eqm_pf.VALjn00(:,1:R,t) .* exp(w_belief(:,1:R,t,t1) + L_belief(:,1:R,t,t1));
-        VALjn00(:,R+1:N,t) =  eqm_pf.VALjn00(:,R+1:N,t) .* exp(w_belief(:,R+1:N,t,t1));
+        pi(:,:,t)          = approx_pf.pi(:,:,t)   .* exp(pi_belief(:,:,t,t1)); 
+        mu(:,:,t)          = approx_pf.mu(:,:,t)   .* exp(mu_belief(:,:,t,t1));
+        X(:,:,t)           = eqm_pf.X(:,:,t)       .* exp(X_belief(:,:,t,t1));
+        Ldyn(:,:,t)        = eqm_pf.Ldyn(:,:,t)    .* exp(L_belief(:,:,t,t1));
+        wf00(:,:,t)        = eqm_pf.wf00(:,:,t)    .* exp(w_belief(:,:,t,t1));
+        pf00(:,:,t)        = eqm_pf.pf00(:,:,t)    .* exp(p_belief(:,:,t,t1));
+        VALjn00(:,1:R,t)   = eqm_pf.VALjn00(:,1:R,t)   .* exp(w_belief(:,1:R,t,t1) + L_belief(:,1:R,t,t1));
+        VALjn00(:,R+1:N,t) = eqm_pf.VALjn00(:,R+1:N,t) .* exp(w_belief(:,R+1:N,t,t1));
         
         %normalize
         %{
@@ -124,7 +124,7 @@ for t2 = ENDT:-1:1 %Perfect Foresight begins from ENDT+1
              for j=1:J
                  for ii=1:N
                      varrho(n+(j-1)*N,ii,t) = pi(n+(j-1)*N,ii,t) * X(j,n,t) / X(j,ii,t);
-                     chi(n+(j-1)*N,ii,t) = pi(n+(j-1)*N,ii,t) * X(j,n,t) / VALjn00(j,ii,t);
+                     chi(n+(j-1)*N,ii,t)    = pi(n+(j-1)*N,ii,t) * X(j,n,t) / VALjn00(j,ii,t);
                  end
              end
          end
@@ -149,8 +149,8 @@ for t2 = ENDT:-1:1 %Perfect Foresight begins from ENDT+1
     eqm_belief.VALjn00(:,:,t1:TIME)   = VALjn00(:,:,t1:TIME);
     
     L_belief_lev(:,:,:,t2) = eqm_belief.Ldyn; 
-    wf_belief(:,:,:,t2) = eqm_belief.wf00; 
-    pf_belief(:,:,:,t2) = eqm_belief.pf00; 
+    wf_belief(:,:,:,t2)    = eqm_belief.wf00; 
+    pf_belief(:,:,:,t2)    = eqm_belief.pf00; 
 
     %% Recover PERFECT FORESIGHT
     disp('########################################')
@@ -170,22 +170,22 @@ for t2 = ENDT:-1:1 %Perfect Foresight begins from ENDT+1
     [eqm_temp_pf] = PBP_DYN(params, t2, t2, E_T_hat_pf, kappa_hat, L, V, W, approx_belief);
     
     % save deviation path for each period(t2)
-    L_pf(:,:,:,t2) = reshape(eqm_temp_pf.L,J,R,TIME);
-    w_pf(:,:,:,t2) = eqm_temp_pf.w;
-    p_pf(:,:,:,t2) = eqm_temp_pf.p;
-    X_pf(:,:,:,t2) = eqm_temp_pf.X;
+    L_pf(:,:,:,t2)  = reshape(eqm_temp_pf.L,J,R,TIME);
+    w_pf(:,:,:,t2)  = eqm_temp_pf.w;
+    p_pf(:,:,:,t2)  = eqm_temp_pf.p;
+    X_pf(:,:,:,t2)  = eqm_temp_pf.X;
     pi_pf(:,:,:,t2) = eqm_temp_pf.pi;
     mu_pf(:,:,:,t2) = eqm_temp_pf.mu;
 
     % Append New approximation points from DGP (in level)
     for t=t2:TIME
-        pi(:,:,t)      =  approx_belief.pi(:,:,t)  .* exp(pi_pf(:,:,t,t2)); 
-        mu(:,:,t)      =  approx_belief.mu(:,:,t)  .* exp(mu_pf(:,:,t,t2));
-        X(:,:,t)       =  eqm_belief.X(:,:,t)      .* exp(X_pf(:,:,t,t2));
-        Ldyn(:,:,t)    =  eqm_belief.Ldyn(:,:,t)   .* exp(L_pf(:,:,t,t2));
-        wf00(:,:,t)    =  eqm_belief.wf00(:,:,t)   .* exp(w_pf(:,:,t,t2));
-        pf00(:,:,t)    =  eqm_belief.pf00(:,:,t)   .* exp(p_pf(:,:,t,t2));
-        VALjn00(:,1:R,t) =  eqm_belief.VALjn00(:,1:R,t)     .* exp(w_pf(:,1:R,t,t2) + L_pf(:,1:R,t,t2));
+        pi(:,:,t)          =  approx_belief.pi(:,:,t)  .* exp(pi_pf(:,:,t,t2)); 
+        mu(:,:,t)          =  approx_belief.mu(:,:,t)  .* exp(mu_pf(:,:,t,t2));
+        X(:,:,t)           =  eqm_belief.X(:,:,t)      .* exp(X_pf(:,:,t,t2));
+        Ldyn(:,:,t)        =  eqm_belief.Ldyn(:,:,t)   .* exp(L_pf(:,:,t,t2));
+        wf00(:,:,t)        =  eqm_belief.wf00(:,:,t)   .* exp(w_pf(:,:,t,t2));
+        pf00(:,:,t)        =  eqm_belief.pf00(:,:,t)   .* exp(p_pf(:,:,t,t2));
+        VALjn00(:,1:R,t)   =  eqm_belief.VALjn00(:,1:R,t)     .* exp(w_pf(:,1:R,t,t2) + L_pf(:,1:R,t,t2));
         VALjn00(:,R+1:N,t) =  eqm_belief.VALjn00(:,R+1:N,t) .* exp(w_pf(:,R+1:N,t,t2));
 
         %normalize
@@ -217,7 +217,7 @@ for t2 = ENDT:-1:1 %Perfect Foresight begins from ENDT+1
             for j=1:J
                 for ii=1:N
                     varrho(n+(j-1)*N,ii,t) = pi(n+(j-1)*N,ii,t) * X(j,n,t) / X(j,ii,t);
-                    chi(n+(j-1)*N,ii,t) = pi(n+(j-1)*N,ii,t) * X(j,n,t) / VALjn00(j,ii,t);
+                    chi(n+(j-1)*N,ii,t)    = pi(n+(j-1)*N,ii,t) * X(j,n,t) / VALjn00(j,ii,t);
                 end
             end
         end
@@ -244,8 +244,8 @@ for t2 = ENDT:-1:1 %Perfect Foresight begins from ENDT+1
     
     
     L_pf_lev(:,:,:,t2) = eqm_pf.Ldyn; 
-    wf_pf(:,:,:,t2) = eqm_pf.wf00; 
-    pf_pf(:,:,:,t2) = eqm_pf.pf00; 
+    wf_pf(:,:,:,t2)    = eqm_pf.wf00; 
+    pf_pf(:,:,:,t2)    = eqm_pf.pf00; 
 end
 
 eqm_recur = v2struct(L_pf_lev, L_belief_lev, wf_pf, pf_pf, L_pf, w_pf, p_pf, pi_pf, mu_pf,...

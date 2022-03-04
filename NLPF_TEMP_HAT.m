@@ -19,31 +19,31 @@ pfmax = 1;
 while (ITER_TEMP <= MAXIT) && ((wfmax > TOL_NL_TEMP) || (pfmax > TOL_NL_TEMP))  %|| (Xmax > TOL_NL))
     
     % step  1. get an updated p
-    lw       =  log(wf0);
-    lp       =  log(pf0);
+    lw = log(wf0);
+    lp = log(pf0);
     % calculating log cost
     lc = GAMMA.*lw + (1-GAMMA).*lp;
-    c = exp(lc);
+    c  = exp(lc);
 
     for j=1:J
-        idx=1+(j-1)*N:1:N*j;
-        LT(idx,1)=ones(N,1)*(1/THETA(j));
+        idx = 1+(j-1)*N:1:N*j;
+        LT(idx,1) = ones(N,1)*(1/THETA(j));
     end 
-    Din_k=Din.*(kappa_hat.^(-1./(LT*ones(1,N))));      
+    Din_k = Din.*(kappa_hat.^(-1./(LT*ones(1,N))));      
 
     %Calculate change in prices 
     for j=1:1:J
         for n=1:1:N
 %        phat(j,n)=Din_k(n+(j-1)*N,:)*((T_hat(j,:).^(THETA(j)*GAMMA(j,:))).*(c(j,:).^(-THETA(j))))';
-        phat(j,n)=Din_k(n+(j-1)*N,:)*((T_hat(j,:)).*(c(j,:).^(-THETA(j))))';
-        phat(j,n)=phat(j,n)^(-1/THETA(j));
+        phat(j,n) = Din_k(n+(j-1)*N,:)*(T_hat(j,:).*(c(j,:).^(-THETA(j))))';
+        phat(j,n) = phat(j,n)^(-1/THETA(j));
         end              
     end
 
     % step 2 calculate for Dinp (bilateral trade shares)
     for n=1:1:N
-        cp(:,n)=c(:,n).^( - THETA );
-        phatp(:,n)=phat(:,n).^(-THETA);
+        cp(:,n)    = c(:,n).^( - THETA );
+        phatp(:,n) = phat(:,n).^(-THETA);
     end
 
     
@@ -52,8 +52,8 @@ while (ITER_TEMP <= MAXIT) && ((wfmax > TOL_NL_TEMP) || (pfmax > TOL_NL_TEMP))  
         DD(idx,:) = Din_k(idx,:).*(cp.*T_hat);   
     end
     for n=1:1:N
-        idx=n:N:length(Din)-(N-n);
-        Dinp(idx,:)=DD(idx,:)./(phatp(:,n)*ones(1,N)); 
+        idx = n:N:length(Din)-(N-n);
+        Dinp(idx,:) = DD(idx,:)./(phatp(:,n)*ones(1,N)); 
     end
 
     
@@ -80,7 +80,7 @@ while (ITER_TEMP <= MAXIT) && ((wfmax > TOL_NL_TEMP) || (pfmax > TOL_NL_TEMP))  
         end
         X(j,:) = (A\(RHS(j,:)'))';
     end
-
+    
     for n=1:N
         for j=1:J
             for i=1:N
@@ -107,7 +107,7 @@ while (ITER_TEMP <= MAXIT) && ((wfmax > TOL_NL_TEMP) || (pfmax > TOL_NL_TEMP))  
 end
 
 % Price index
-Pf0=prod(pf0.^(ALPHAS));
+Pf0 = prod(pf0.^(ALPHAS));
 % Update labor income
 VALjn = VALjn0 .* (wf0 .* Ljn_hat);
 %disp('Number of iteration')

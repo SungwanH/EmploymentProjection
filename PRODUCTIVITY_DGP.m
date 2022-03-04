@@ -21,9 +21,7 @@ for t=1:TIME-1
 end
 
 for t=1:TIME
-%    for k=1:J
-        T(:,CHINA,t) = exp(log(T(:,US,t)) - gap(:,1,t));
-%    end
+    T(:,CHINA,t) = exp(log(T(:,US,t)) - gap(:,1,t));
 end
 
 %Here I force to converge at ENDT+1

@@ -12,7 +12,7 @@ v2struct(params.prod);
 
 RUN_NLPF_HAT_SS = 1; 
 RUN_NLPF_HAT    = 1; 
-RUN_DGP         = 1; 
+RUN_DGP         = 0; 
 RUN_RECUR       = 1;
 
 
@@ -71,6 +71,8 @@ else
     load('DATA/NLPF_HAT.mat','eqm_nlpf_HAT','approx_nlpf_HAT'); %loading the equilibrium values in the baseline economy
 end
 
+
+
 %% Obtain DGP path
 if RUN_DGP ==1
 disp('#################')
@@ -79,6 +81,33 @@ disp('Running DGP')
 else
     load('DATA/DGP.mat', 'eqm_dgp','approx_dgp'); 
 end
+
+%% Test (nonlinear solution to the belief productivity in the first period)
+T_HAT_belief = ones(J,N,TIME);
+for t=1:TIME-1
+    T_HAT_belief(:,:,t+1)=T_belief(:,:,t+1,1)./T_belief(:,:,t,1); %time difference in belief
+end
+load('DATA/NLPF_HAT_BELIEF.mat','eqm_nlpf_HAT_belief');
+initial_belief.L0 = eqm_nlpf_HAT_SS.Ldyn(:,:,TIME_SS);
+initial_belief.mu0 = approx_nlpf_HAT_SS.mu(:,:,TIME_SS);
+initial_belief.T_HAT = T_HAT_belief;
+initial_belief.v_td = eqm_nlpf_HAT_belief.v_td;
+SS=2;
+[eqm_nlpf_HAT_belief, approx_nlpf_HAT_belief] = NLPF_HAT(params, initial_belief, SS);
+
+Ldynamic = permute(sum(eqm_nlpf_HAT.Ldyn,1),[2,3,1]);
+Ldynamic_belief = permute(sum(eqm_nlpf_HAT_belief.Ldyn,1),[2,3,1]);
+L_belief_dgp = eqm_dgp.L_belief_dgp;
+L_belief_agg_dgp = permute(sum(L_belief_dgp,1),[2,3,4,1]);
+
+figure
+hold on
+title('Labor California (level)')
+plot(1:TIME-1,Ldynamic(5,1:TIME-1,1))
+plot(1:TIME-1,Ldynamic_belief(5,1:TIME-1,1),'--')
+plot(1:TIME-1,L_belief_agg_dgp(5,1:TIME-1,1,1),':')
+legend('Nonlinear PF','Nonlinear Belief','Linear Belief','location','best')
+saveas(gcf,'figures/NLPF_TEST.png')
 
 %% Obtain Period by period DGP & PF deviation
 if RUN_RECUR ==1

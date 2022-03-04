@@ -17,14 +17,14 @@ v2struct(approx_nlpf)
 
 % period by period equilibrium
 % Initialize
-v_hat = zeros(R*J,TIME); 
-w_hat = zeros(J,N,TIME); 
-p_hat = zeros(J,N,TIME); 
-X_hat = zeros(J,N,TIME); 
-pi_hat = zeros(N*J,N,TIME); 
-mu_hat = zeros(R*J,R*J,TIME); 
-L_hat = zeros(J,R,TIME); 
-L_dgp = zeros(J,R,TIME);
+v_hat     = zeros(R*J,TIME); 
+w_hat     = zeros(J,N,TIME); 
+p_hat     = zeros(J,N,TIME); 
+X_hat     = zeros(J,N,TIME); 
+pi_hat    = zeros(N*J,N,TIME); 
+mu_hat    = zeros(R*J,R*J,TIME); 
+L_hat     = zeros(J,R,TIME); 
+L_dgp     = zeros(J,R,TIME);
 kappa_hat = zeros(N*J,N,TIME);
 L = zeros(R*J,1); %initial deviation from SS of L at the first period is zero
 for t1=1:ENDT+1
@@ -39,20 +39,20 @@ for t1=1:ENDT+1
     V = eqm_temp.v; % update the initial value of V
     W = eqm_temp.w; % update the initial value of wage
     %save the belief path
-    w_hat(:,:,:,t1) = eqm_temp.w;
-    p_hat(:,:,:,t1) = eqm_temp.p;
-    P_hat(:,:,:,t1) = eqm_temp.P;
-    v_hat(:,:,t1) = eqm_temp.v;
-    L_hat(:,:,:,t1) = reshape(eqm_temp.L,J,R,TIME);
+    w_hat(:,:,:,t1)  = eqm_temp.w;
+    p_hat(:,:,:,t1)  = eqm_temp.p;
+    P_hat(:,:,:,t1)  = eqm_temp.P;
+    v_hat(:,:,t1)    = eqm_temp.v;
+    L_hat(:,:,:,t1)  = reshape(eqm_temp.L,J,R,TIME);
     pi_hat(:,:,:,t1) = eqm_temp.pi;
     mu_hat(:,:,:,t1) = eqm_temp.mu;
-    X_hat(:,:,:,t1) = eqm_temp.X;
+    X_hat(:,:,:,t1)  = eqm_temp.X;
     %save the realized path
     if t1<ENDT+1
         L_dgp(:,:,t1+1) = reshape(eqm_temp.L(:,t1+1),J,R);
-        w_dgp(:,:,t1) = eqm_temp.w(:,:,t1);
-        p_dgp(:,:,t1) = eqm_temp.p(:,:,t1);
-        P_dgp(:,:,t1) = eqm_temp.P(:,:,t1);
+        w_dgp(:,:,t1)   = eqm_temp.w(:,:,t1);
+        p_dgp(:,:,t1)   = eqm_temp.p(:,:,t1);
+        P_dgp(:,:,t1)   = eqm_temp.P(:,:,t1);
         pi_dgp(:,:,t1)  = eqm_temp.pi(:,:,t1);
         mu_dgp(:,:,t1)  = eqm_temp.mu(:,:,t1);
         X_dgp(:,:,t1)   = eqm_temp.X(:,:,t1);
@@ -70,9 +70,9 @@ for t1=1:ENDT+1
 end
 
 % generate level values
-Ldyn = exp(L_dgp) .* eqm_nlpf.Ldyn;
-pi = exp(pi_dgp) .* approx_nlpf.pi;
-mu = exp(mu_dgp) .* approx_nlpf.mu;
+Ldyn = exp(L_dgp)  .* eqm_nlpf.Ldyn;
+pi   = exp(pi_dgp) .* approx_nlpf.pi;
+mu   = exp(mu_dgp) .* approx_nlpf.mu;
 
 %normalize
 %{
@@ -98,15 +98,15 @@ VALjn00(1:J,1:R,1:TIME)   = exp(w_dgp(1:J,1:R,1:TIME))  .* exp(L_dgp(1:J,1:R,1:T
 VALjn00(1:J,R+1:N,1:TIME) = exp(w_dgp(1:J,R+1:N,1:TIME)).* eqm_nlpf.VALjn00(1:J,R+1:N,1:TIME); % L_hat for non-US is zero
 
 varrho = zeros(N*J,N,TIME);
-zeta = zeros(N*J,J,TIME);
-chi = zeros(N*J,N,TIME);
+zeta   = zeros(N*J,J,TIME);
+chi    = zeros(N*J,N,TIME);
 lambda = zeros(R*J,R*J, TIME);
 for t=1:TIME
     for n=1:N
         for j=1:J
             for ii=1:N
                 varrho(n+(j-1)*N,ii,t) = pi(n+(j-1)*N,ii,t) * X(j,n,t) / (X(j,ii,t));
-                chi(n+(j-1)*N,ii,t) = pi(n+(j-1)*N,ii,t) * X(j,n,t) / VALjn00(j,ii,t);
+                chi(n+(j-1)*N,ii,t)    = pi(n+(j-1)*N,ii,t) * X(j,n,t) / VALjn00(j,ii,t);
             end
         end
     end

@@ -28,11 +28,11 @@ if ESTM_BOTH==1
             Y = [gap_temp(j,2:t_bef)';gap(j,1:t)'];
             X = [ones(t_bef+t-1,1),[gap_temp(j,1:t_bef,1)';gap(j,1:t-1)']];
             B = X\Y;
-            MU_OLS(j,t) = B(1)/(1-B(2));
+            MU_OLS(j,t)  = B(1)/(1-B(2));
             RHO_OLS(j,t) = B(2);
         end
     end
-    
+    % To make the belief smooth, I put initial values as follows:
     MU_OLS(:,1) =0.35;
     RHO_OLS(:,1) =0.99;
     MU_OLS(:,2) =0.3;
@@ -45,9 +45,6 @@ if ESTM_BOTH==1
             Y = [gap(j,2:t+2)'];
             X = [ones(t+1,1),[gap(j,1:t+1)']];
             B = X\Y;
-            %if B(2)>1
-            %    B(2)=0.999;
-            %end
             MU_OLS(j,t+2) = B(1)/(1-B(2));
             RHO_OLS(j,t+2) = B(2);
         end
@@ -76,20 +73,13 @@ else
             %Y = [gap(2:t+2,1)];
             %X = [ones(t+1,1),[gap(1:t+1,1)]];
             B = X\Y;
-            %if B(2)>1
-            %    B(2)=0.999;
-            %end
             MU_OLS(j,t+2) = B(1);
         end
     end
-%    MU_OLS(1:ENDT)=linspace(0.5,0.25,ENDT);
-%    MU_OLS(1:ENDT-10)=0.25;
-%    MU_OLS(ENDT-9:ENDT)=0.25;
-%    MU_OLS(ENDT+1:TIME)=0.25;
 end
 RHO_HAT = W * RHO + (1-W) .* RHO_OLS(:,1:TIME);
 MU_HAT  = W * MU  + (1-W) .* MU_OLS(:,1:TIME);
 RHO_HAT(:,ENDT+1:TIME) = RHO;
-MU_HAT(:,ENDT+1:TIME) = MU;
+MU_HAT(:,ENDT+1:TIME)  = MU;
 
 end
