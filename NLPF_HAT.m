@@ -14,23 +14,14 @@ v2struct(initial);
 Ymax = 1; ITER_DYN = 1;
 while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     %Solving for the path of migration flows mu
-    for t=1:TIME
-        V(:,:,t) = reshape(v_td(:,t),J,R);
-    end
-    
-    for t=1:TIME
-        Vaux0(:,:,t) = reshape(V(:,:,t),(J)*R,1);
-    end
-    Vaux = permute(Vaux0,[2,1,3]);
-    
-    Vaux2 = zeros((J)*R,R*(J),TIME);
-    for t=1:TIME
-        Vaux2(:,:,t) = repmat(Vaux(:,:,t),R*(J),1);
-    end
-    
+   
+
+    Vaux=reshape(v_td,1,J*R,TIME);
+    Vaux2=repmat(Vaux,R*J,1,1); % Vaux2, first dimension is repeation, second dimension is the value of each cell in a period, ordered by country, i.e., two consecutive entries are obs from different sectors for the same country; note that this needs be consistent with wage and value function update below
+   
     %Computing mu1
     num       = mu0.*(Vaux2(:,:,2).^BETA);
-    den       = sum(num')';
+    den       = sum(num,2);
     den       = den*ones(1,R*(J));
     mu00      = num./den;
     mu        = zeros(R*(J),R*(J),TIME);
@@ -39,15 +30,15 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     %Solving for mu(t+1)
     for t=1:TIME-2
         num=mu(:,:,t).*(Vaux2(:,:,t+2).^BETA);
-        den=sum(num')';
+        den=sum(num,2);
         den=den*ones(1,R*(J));
         mu(:,:,t+1)=num./den;  %this is mu(t+1)
     end
    
     %Solving for the path of employment
     L00         = reshape(L0,J,R);
-    L00_aux2    = reshape(L00,R*(J),1);
-    L00_aux4    = repmat(L00_aux2,1,R*(J));
+    L00_aux2    = reshape(L00,R*(J),1); %two consecutive obs are sectors from the same country
+    L00_aux4    = repmat(L00_aux2,1,R*(J)); % each row is a constant; two consecutive obs in a column are different sectors from the same country
     L00_aux5    = mu00.*L00_aux4;
     L1          = sum(L00_aux5)';
     L1          = reshape(L1,J,R);
@@ -83,7 +74,7 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     realwages      = ones(J,N,TIME);    %real wages. This matrix will store equilibrium real wages from the temporary equilibrium at each time t
     wf00           = ones(J,N,TIME);    %wages
     pf00           = ones(J,N,TIME);    %prices
-    Pf00           = ones(J,N,TIME);    %price index
+    Pf00           = ones(N,TIME);    %price index
     pi             = zeros(N*J,N,TIME); %trade share
     pi(:,:,1)      = Din0;
     VALjn00        = zeros(J,N,TIME);   %labor income
@@ -92,7 +83,9 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     X(:,:,1)       = X0;
     %static sub-problem at each time t
     for t=1:TIME-2
-        disp(t);
+        if mod(t,10)==0
+            fprintf('%d, ', t);
+        end
         %Shocks
         T_temp           = T_HAT(:,:,t+1); 
         Ljn_hat          = ones(J,N); %change in employment in the US
@@ -101,7 +94,7 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
         [wf0, pf0, Pf0, pi_temp, X_temp, VALjn] = NLPF_TEMP_HAT(params, VALjn0, Din0, kappa_hat, T_temp, Ljn_hat, w_guess, p_guess);
         wf00(:,:,t+1)    = wf0;
         pf00(:,:,t+1)    = pf0;
-        Pf00(1,:,t+1)    = Pf0; 
+        Pf00(:,t+1)    = Pf0; 
         pi(:,:,t+1)      = pi_temp;
         X(:,:,t+1)       = X_temp;
         VALjn00(:,:,t+1) = VALjn;
@@ -115,65 +108,29 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
         realwages(:,:,t+1) = wf0(:,:)./(ones(J,1)*Pf0);
     end
     
-    %%%%Solving for the new path of values in time differences%%%
-    realwagesaux = zeros(J,N,TIME);
-    for t = 1:TIME
-        realwagesaux(1,:,t) = 1;
-        realwagesaux(:,:,t) = realwages(:,:,t);
-    end
+    %%%%Solving for the new path of values in time differences%%%        
+    realwages_us=realwages(:,1:R,:); 
+    realwages_us_aux2=reshape(realwages_us,R*J,TIME); % after this, it is a 200X200; in the first dimension, two consecutive observations are different sectors of the same country
+    realwages_us_nuu=realwages_us_aux2.^(1/NU);
     
-    rwage=ones(R,J,TIME);
+    % we now update value function backwards; Y standard for the changes in
+    % value function from this iteration
+    Y=NaN(R*(J),TIME);    
+    Y(:,TIME)=realwages_us_nuu(:,TIME);
     
-    for t = 1:TIME
-        rwage(:,:,t) = permute(realwagesaux(:,1:R,t),[2,1,3]);
-    end
-    
-    rw     = rwage.^(1/NU);
-    rw     = permute(rw,[2,1,3]);
-    rw_aux = zeros(R*(J),1,TIME);
-    for t=1:TIME
-        rw_aux(:,:,t) = reshape(rw(:,:,t),R*(J),1);
-    end
-    
-    rw_aux2 = zeros(R*(J),R*(J),TIME);
-    for t=1:TIME
-        rw_aux2(:,:,t) = repmat(rw_aux(:,:,t),1,R*(J));
-    end
-    
-    rwagenu=zeros(R*(J),R*(J),TIME);
-    
-    for t=1:TIME-1
-        rwagenu(:,:,t+1) = mu(:,:,t).*rw_aux2(:,:,t+1);
-    end
-    
-    num=zeros(size(rwagenu));
-    for t=1:TIME-1
-        num(:,:,t) = rwagenu(:,:,t).*(Vaux2(:,:,t+1).^BETA);
-    end
-    
-    Y = zeros(R*(J),1,TIME);
-    for t=1:TIME
-        Y(:,:,t) = sum(num(:,:,t)')';  %this is the new path of Ys
-    end
-    Y(:,:,TIME)=1;
-    
-        
-    Ynew = zeros((J)*R, TIME);
-    for t=1:TIME
-        Ynew(:,t) = Y(:,:,t);
-    end
-    Ynew(:,TIME) = 1;
-    v_td(:,TIME) = 1;
+    for tt=TIME-1:-1:1
+        temp0=ones(J*R,1)*Y(:,tt+1)';
+        temp=sum(mu(:,:,tt).*temp0,2); 
+        Y(:,tt)=realwages_us_nuu(:,tt).*temp;
+    end    
     
     %Excess function
     checkY = zeros(TIME,1); 
     for t=2:TIME
-%        checkY(t,1)=max(abs(Ynew(:,t)-v_td(:,t)));
-        checkY(t,1) = max(abs(log(Ynew(:,t))-log(v_td(:,t))));
+        checkY(t,1) = max(abs(log(Y(:,t))-log(v_td(:,t))));
     end
-    Ymax = max(checkY)
-    
-    v_td = UPDT_V_NL * Ynew + (1-UPDT_V_NL) * v_td;
+    Ymax = max(checkY)    
+    v_td = UPDT_V_NL * Y + (1-UPDT_V_NL) * v_td;
     ITER_DYN = ITER_DYN+1;
 end
 
@@ -218,16 +175,16 @@ for t=1:TIME-2
     end
 end
 for t=TIME-1:TIME
-varrho(:,:,t)  = varrho(:,:,TIME-2);
-pi(:,:,t)      = pi(:,:,TIME-2);
-chi(:,:,t)     = chi(:,:,TIME-2);
-zeta(:,:,t)    = zeta(:,:,TIME-2);
-lambda(:,:,t)  = lambda(:,:,TIME-2);
-mu(:,:,t)      = mu(:,:,TIME-2);
-wf00(:,:,t)    = wf00(:,:,TIME-2);
-pf00(:,:,t)    = pf00(:,:,TIME-2);
-VALjn00(:,:,t) = VALjn00(:,:,TIME-2);
-X(:,:,t)       = X(:,:,TIME-2);
+    varrho(:,:,t)  = varrho(:,:,TIME-2);
+    pi(:,:,t)      = pi(:,:,TIME-2);
+    chi(:,:,t)     = chi(:,:,TIME-2);
+    zeta(:,:,t)    = zeta(:,:,TIME-2);
+    lambda(:,:,t)  = lambda(:,:,TIME-2);
+    mu(:,:,t)      = mu(:,:,TIME-2);
+    wf00(:,:,t)    = wf00(:,:,TIME-2);
+    pf00(:,:,t)    = pf00(:,:,TIME-2);
+    VALjn00(:,:,t) = VALjn00(:,:,TIME-2);
+    X(:,:,t)       = X(:,:,TIME-2);
 end
 %normalize
 %for t=1:TIME
@@ -238,23 +195,23 @@ end
 
 
 if SS==1
-eqm_nlpf_HAT_SS = v2struct(v_td, Ldyn, realwages, wf00, pf00, VALjn00, X);
-approx_nlpf_HAT_SS = v2struct(mu, pi, varrho, chi, zeta, lambda);
-eqm_nlpf_HAT = eqm_nlpf_HAT_SS;
-approx_nlpf_HAT = approx_nlpf_HAT_SS;
-save('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS'); 
+    eqm_nlpf_HAT_SS = v2struct(v_td, Ldyn, realwages, wf00, pf00, VALjn00, X);
+    approx_nlpf_HAT_SS = v2struct(mu, pi, varrho, chi, zeta, lambda);
+    eqm_nlpf_HAT = eqm_nlpf_HAT_SS;
+    approx_nlpf_HAT = approx_nlpf_HAT_SS;
+    save('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS'); 
 
 elseif SS==0
-eqm_nlpf_HAT = v2struct(v_td, Ldyn, realwages, wf00, pf00, VALjn00, X);
-approx_nlpf_HAT = v2struct(mu, pi, varrho, chi, zeta, lambda);
-save('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT','approx_nlpf_HAT'); 
+    eqm_nlpf_HAT = v2struct(v_td, Ldyn, realwages, wf00, pf00, VALjn00, X);
+    approx_nlpf_HAT = v2struct(mu, pi, varrho, chi, zeta, lambda);
+    save('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT','approx_nlpf_HAT'); 
 
 else
-eqm_nlpf_HAT_belief = v2struct(v_td, Ldyn, realwages, wf00, pf00, VALjn00, X);
-approx_nlpf_HAT_belief = v2struct(mu, pi, varrho, chi, zeta, lambda);
-eqm_nlpf_HAT = eqm_nlpf_HAT_belief;
-approx_nlpf_HAT = approx_nlpf_HAT_belief;
-save('DATA/NLPF_HAT_BELIEF.mat', 'eqm_nlpf_HAT_belief','approx_nlpf_HAT_belief'); 
+    eqm_nlpf_HAT_belief = v2struct(v_td, Ldyn, realwages, wf00, pf00, VALjn00, X);
+    approx_nlpf_HAT_belief = v2struct(mu, pi, varrho, chi, zeta, lambda);
+    eqm_nlpf_HAT = eqm_nlpf_HAT_belief;
+    approx_nlpf_HAT = approx_nlpf_HAT_belief;
+    save('DATA/NLPF_HAT_BELIEF.mat', 'eqm_nlpf_HAT_belief','approx_nlpf_HAT_belief'); 
 end
 
 

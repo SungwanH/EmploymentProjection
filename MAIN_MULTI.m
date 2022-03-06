@@ -1,5 +1,5 @@
 
-clear all
+clear 
 close all
 clc;
 digits(50)
@@ -12,15 +12,15 @@ v2struct(params.prod);
 
 RUN_NLPF_HAT_SS = 1; 
 RUN_NLPF_HAT    = 1; 
-RUN_DGP         = 0; 
+RUN_DGP         = 1; 
 RUN_RECUR       = 1;
-
 
 %% Obtain non-linear level outcome in HAT (Obtain initial Steady State)
 if RUN_NLPF_HAT_SS ==1
 disp('#################')
 disp('Running NLPF_HAT_SS')
     load('DATA/BASE_FOURSECTOR.mat','mu0','L0')    
+
     %Change to Biannual basis
     [VV,D] = eig(mu0(:,:));
     mu0 = real(VV * (D)^8 * inv(VV));
@@ -32,8 +32,8 @@ disp('Running NLPF_HAT_SS')
     L0=reshape(L00,J,R);
 
     v_td=ones(R*(J),TIME_SS); %Initial guess for the Ys (exp(Vt+1-V)^1/NU)
-    load('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS'); %one-shot convergence
-    v_td(:,1:length(eqm_nlpf_HAT_SS.v_td)) = eqm_nlpf_HAT_SS.v_td(:,1:length(eqm_nlpf_HAT_SS.v_td));
+    %load('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS'); %one-shot convergence
+    %v_td(:,1:length(eqm_nlpf_HAT_SS.v_td)) = eqm_nlpf_HAT_SS.v_td(:,1:length(eqm_nlpf_HAT_SS.v_td));
     
     initial_SS.L0 = L0;
     initial_SS.mu0 = mu0;
@@ -82,6 +82,7 @@ else
     load('DATA/DGP.mat', 'eqm_dgp','approx_dgp'); 
 end
 
+%{
 %% Test (nonlinear solution to the belief productivity in the first period)
 T_HAT_belief = ones(J,N,TIME);
 for t=1:TIME-1
@@ -108,6 +109,8 @@ plot(1:TIME-1,Ldynamic_belief(5,1:TIME-1,1),'--')
 plot(1:TIME-1,L_belief_agg_dgp(5,1:TIME-1,1,1),':')
 legend('Nonlinear PF','Nonlinear Belief','Linear Belief','location','best')
 saveas(gcf,'figures/NLPF_TEST.png')
+%}
+
 
 %% Obtain Period by period DGP & PF deviation
 if RUN_RECUR ==1

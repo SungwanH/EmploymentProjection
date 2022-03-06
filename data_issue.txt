@@ -1,0 +1,2 @@
+1. Either the ordering or the aggregation of the original data is problematic, for MEX has 17\% of world value added. I strongly suspect that MEX and Japan order is wrong.
+2. The input-output linkage that is used in aggregation must be wrong.

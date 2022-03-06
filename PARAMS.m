@@ -23,7 +23,8 @@ NU      = 5.3436; %dispersion of taste shocks (In CDP: 5.3436)
 %BETA    = 0.9605; %discount rate (0.99^4: transformed from quarterly to yearly)
 BETA    = 0.9227; %discount rate (0.99^8: transformed from quarterly to bi-annual)
 
-TAU     = ones(N*J,N); %iceberg trade cost
+%TAU     = ones(N*J,N); %iceberg trade cost; JF: we no longer use TAU in
+%this version
 %TAU     = (ones(N,N)-eye(N)).*(1+rand(N))+eye(N);
 
 
@@ -52,7 +53,7 @@ TOLTEMP     = 1E-7;  % tolerance rate for linear temporary equilibrium
 MAXIT       = 1E+8; %maximum number of iterations
 
 
-params.envr = v2struct(TIME, TIME_SS, N, R, C, J, US, CHINA, TAU, ENDT, ENDT_SAMPLE, ENDT_DGP, EPST);
+params.envr = v2struct(TIME, TIME_SS, N, R, C, J, US, CHINA, ENDT, ENDT_SAMPLE, ENDT_DGP, EPST); %remoevd TAU from this structure
 params.modl = v2struct(THETA, NU, BETA, ALPHAS, THETA, GAMMA);
 params.tech = v2struct(ESTM_BOTH, UPDT_V, UPDT_W, UPDT_V_NL, UPDT_W_NL, TOL_NL, TOL_NL_TEMP, TOLDYN, TOLTEMP, MAXIT);
 

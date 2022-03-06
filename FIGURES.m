@@ -38,10 +38,13 @@ legend('Productivity','Belief at t=1','Belief at t=5','Belief at t=10','location
 saveas(gcf,'figures/prod_and_belief_sec2.png')
 
 %% nonlinear perfect foresight
-
 v_td = eqm_nlpf_HAT.v_td;
 v_td_SS = eqm_nlpf_HAT_SS.v_td;
 Ldynamic = permute(sum(eqm_nlpf_HAT.Ldyn,1),[2,3,1]);
+
+US_manu_share_in_world=reshape(sum(eqm_nlpf_HAT.VALjn00(1,1:50,:),2)./sum(eqm_nlpf_HAT.VALjn00(1,:,:),2),TIME,1);
+LdynamicManu= reshape(sum(eqm_nlpf_HAT.Ldyn(1,:,:),2),TIME,1);
+
 Ldynamic_SS = permute(sum(eqm_nlpf_HAT_SS.Ldyn,1),[2,3,1]);
 for t=1:TIME-1
     Ltrend(:,t)=Ldynamic(:,t+1)-Ldynamic(:,t);
