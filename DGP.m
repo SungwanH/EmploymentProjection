@@ -26,7 +26,7 @@ mu_hat    = zeros(R*J,R*J,TIME);
 L_hat     = zeros(J,R,TIME); 
 L_dgp     = zeros(J,R,TIME);
 kappa_hat = zeros(N*J,N,TIME);
-L = zeros(R*J,1); %initial deviation from SS of L at the first period is zero
+L = zeros(R*J,1); %initial deviation from the path around which we are linearizing
 for t1=1:ENDT+1
     tic
     if t1 ==1 

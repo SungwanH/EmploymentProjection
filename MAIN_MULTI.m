@@ -10,8 +10,8 @@ v2struct(params.envr);
 v2struct(params.modl);
 v2struct(params.prod);
 
-RUN_NLPF_HAT_SS = 1; 
-RUN_NLPF_HAT    = 1; 
+RUN_NLPF_HAT_SS = 0; 
+RUN_NLPF_HAT    = 0; 
 RUN_DGP         = 1; 
 RUN_RECUR       = 1;
 

@@ -21,13 +21,9 @@ chi     =   approx.chi;
 pi      =   approx.pi;
 
 %L_hat_R only includes US states
-L_hat = zeros(J,N,TIME);
+L_hat = NaN(J,N,TIME);
 for t=1:TIME
-    for j=1:J
-        for n=1:R
-            L_hat(j,n,t) = L_hat_R(j+(n-1)*J,t);
-        end
-    end
+    L_hat(:,1:R,t)=reshape(L_hat_R(:,t),J,R);
 end
 L_hat(1:J,R+1:N,1:TIME) = zeros(J,N-R,TIME); %There is no migration in other countries
 
@@ -53,7 +49,7 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
         % ( -(1-B_1j)pi_2j1   1-(1-B_2j)pi_2j2    -(1-B_3j)pi_2j3 ...)
         RHS = zeros(J,N);
     
-        pi_aux =  pi(:,:,t);
+        pi_aux =  pi(:,:,t); %Note that pi and kappa are organized by sector; i.e., two consecutive rows are same sectors in different countries
         w_temp = w_hat(:,:,t);
         T_temp = T_hat(:,:,t);
         kappa_temp = kappa_hat(:,:,t);
@@ -63,6 +59,7 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
             end
         end
         A = zeros(N,N);
+        
         for j=1:J
             for n=1:N
                 for i=1:N
@@ -91,7 +88,10 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
 
     % Step 4d. Solve for total expenditure
     for t = t1:TIME
-        RHS = zeros(J,N);
+        RHS = NaN(J,N);
+        RHS1=NaN(J,N,N);
+        RHS2=NaN(J,N,J);
+        
         varrho_aux = varrho(:,:,t);
         pi_temp = pi_hat(:,:,t);
         zeta_aux = zeta(:,:,t);
@@ -99,13 +99,13 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
         L_temp = L_hat(:,:,t);
         for n=1:N
             for j=1:J
-                RHS1(j,:,n) = varrho_aux(n+(j-1)*N,:) .* pi_temp(n+(j-1)*N,:);
+                RHS1(j,:,n) = (1-GAMMA(j,:)).*varrho_aux(n+(j-1)*N,:) .* pi_temp(n+(j-1)*N,:);
             end
         end
         for ii=1:N
             for j=1:J
                 for k=1:J
-                    RHS2(j,ii,k) = ALPHAS(j,ii)*(zeta_aux(ii+(k-1)*N,j) *w_temp(k,ii)*L_temp(k,ii)); 
+                    RHS2(j,ii,k) = ALPHAS(j,ii)*(zeta_aux(ii+(k-1)*N,j) *(w_temp(k,ii)+L_temp(k,ii))); 
                 end
             end
         end
@@ -120,10 +120,13 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
             end
             X_temp(j,:) = (A\(RHS(j,:)'))';
         end
-        X_hat(:,:,t) = X_temp;
+
+        X_hat(:,:,t) = X_temp;        
     end
     % Step 4e. Solve for an updated w_hat using the labor market clearing
     for t = t1:TIME
+        RHS_temp=NaN(J,N,N);
+        
         chi_aux = chi(:,:,t);
         X_temp = X_hat(:,:,t);
         L_temp = L_hat(:,:,t);
