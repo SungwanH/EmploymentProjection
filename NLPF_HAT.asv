@@ -34,7 +34,8 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
         den=den*ones(1,R*(J));
         mu(:,:,t+1)=num./den;  %this is mu(t+1)
     end
-   
+       mu(:,:,TIME)=mu(:,:,TIME-1);
+       
     %Solving for the path of employment
     L00         = reshape(L0,J,R);
     L00_aux2    = reshape(L00,R*(J),1); %two consecutive obs are sectors from the same country
@@ -82,7 +83,7 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     X              = zeros(J,N,TIME);   %expenditure
     X(:,:,1)       = X0;
     %static sub-problem at each time t
-    for t=1:TIME-2
+    for t=1:TIME-1
         if mod(t,10)==0
             fprintf('%d, ', t);
         end
@@ -116,8 +117,7 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     % we now update value function backwards; Y standard for the changes in
     % value function from this iteration
     Y=NaN(R*(J),TIME);    
-    Y(:,TIME)=realwages_us_nuu(:,TIME);
-    
+    Y(:,TIME)=realwages_us_nuu(:,TIME);    
     for tt=TIME-1:-1:1
         temp0=ones(J*R,1)*Y(:,tt+1)';
         temp=sum(mu(:,:,tt).*temp0,2); 
@@ -126,7 +126,7 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     
     %Excess function
     checkY = zeros(TIME,1); 
-    for t=2:TIME
+    for t=1:TIME
         checkY(t,1) = max(abs(log(Y(:,t))-log(v_td(:,t))));
     end
     Ymax = max(checkY)    
@@ -135,12 +135,12 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
 end
 
 % approximation points
-varrho = zeros(N*J,N,TIME-2);
-zeta   = zeros(N*J,J,TIME-2);
-chi    = zeros(N*J,N,TIME-2);
+varrho = zeros(N*J,N,TIME); % period t of these variables are based on period t levels.
+zeta   = zeros(N*J,J,TIME);
+chi    = zeros(N*J,N,TIME);
 lambda = zeros(R*J,R*J,TIME);
 
-for t=1:TIME-2
+for t=1:TIME
     for n=1:N
         for j=1:J
             for ii=1:N
@@ -150,7 +150,7 @@ for t=1:TIME-2
         end
     end
 end
-for t=1:TIME-2
+for t=1:TIME
     for k=1:J
         for ii=1:N
             for j=1:J
@@ -159,7 +159,7 @@ for t=1:TIME-2
         end
     end
 end
-for t=1:TIME-2
+for t=1:TIME
     for k=1:J
         for ii=1:R
             for j=1:J
@@ -174,6 +174,8 @@ for t=1:TIME-2
         end
     end
 end
+
+%{
 for t=TIME-1:TIME
     varrho(:,:,t)  = varrho(:,:,TIME-2);
     pi(:,:,t)      = pi(:,:,TIME-2);
@@ -186,6 +188,7 @@ for t=TIME-1:TIME
     VALjn00(:,:,t) = VALjn00(:,:,TIME-2);
     X(:,:,t)       = X(:,:,TIME-2);
 end
+%}
 %normalize
 %for t=1:TIME
 %    for i=1:R*J
