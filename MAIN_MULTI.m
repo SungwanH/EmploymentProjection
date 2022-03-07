@@ -21,9 +21,9 @@ disp('#################')
 disp('Running NLPF_HAT_SS')
     load('DATA/BASE_FOURSECTOR.mat','mu0','L0')    
 
-    %Change to Biannual basis
+    %Change to Annual basis
     [VV,D] = eig(mu0(:,:));
-    mu0 = real(VV * (D)^8 * inv(VV));
+    mu0 = real(VV * (D)^4 * inv(VV));
     L00 =L0(:);
     % start from steady state
     for i=1:500

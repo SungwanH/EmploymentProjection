@@ -44,6 +44,7 @@ Ldynamic = permute(sum(eqm_nlpf_HAT.Ldyn,1),[2,3,1]);
 
 US_manu_share_in_world=reshape(sum(eqm_nlpf_HAT.VALjn00(1,1:50,:),2)./sum(eqm_nlpf_HAT.VALjn00(1,:,:),2),TIME,1);
 LdynamicManu= reshape(sum(eqm_nlpf_HAT.Ldyn(1,:,:),2),TIME,1);
+LdynamicServ= reshape(sum(eqm_nlpf_HAT.Ldyn(4,:,:),2),TIME,1);
 
 Ldynamic_SS = permute(sum(eqm_nlpf_HAT_SS.Ldyn,1),[2,3,1]);
 for t=1:TIME-1
@@ -116,6 +117,24 @@ hold on
 title('Perfect Foresight: Real wages California')
  plot(1:TIME,realwages_fig(5,1:TIME))
 saveas(gcf,'figures/realwage_level_CAL.png')
+
+figure
+hold on
+title('Perfect Foresight: US Manufacture Share in the World')
+ plot(1:TIME,US_manu_share_in_world(1:TIME))
+saveas(gcf,'figures/PF_US_manu_share.png')
+
+figure
+hold on
+title('Perfect Foresight: US Manufacture Employment')
+ plot(1:TIME,LdynamicManu(1:TIME))
+saveas(gcf,'figures/PF_US_manu_emp.png')
+
+figure
+hold on
+title('Perfect Foresight: US Service Employment')
+ plot(1:TIME,LdynamicServ(1:TIME))
+saveas(gcf,'figures/PF_US_serv_emp.png')
 
 
 %% DATA path (linearized)

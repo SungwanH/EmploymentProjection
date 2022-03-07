@@ -60,7 +60,7 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     kappa_hat = ones(J*N,N); % relative change in trade cost
     
     load('DATA/BASE_FOURSECTOR.mat', 'VALjn00', 'Din00')
-    VALjn00   = VALjn00*8; % change quarterly data to bi-annual
+    VALjn00   = VALjn00*4; % change quarterly data to annual
     Ljn_hat00 = ones(J,N);
     T_hat00   = ones(J,N);
     [~, ~, ~, Din00_matched, X_matched, VALjn00_matched] = NLPF_TEMP_HAT(params, VALjn00, Din00, kappa_hat, T_hat00, Ljn_hat00, w_guess, p_guess);
