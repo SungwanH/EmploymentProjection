@@ -7,7 +7,6 @@ v2struct(params.envr);
 
 % Initialize productivity
 T = T_BASE(:,:,1:TIME);
-T(:,CHINA,1:TIME) = 1;
 %draw error term for productivity
 EPS = PRODUCTIVITY_DRAW(params);
 

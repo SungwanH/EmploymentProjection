@@ -7,8 +7,7 @@ R       = 50; %number of US regions
 C       = 37; %number of non-US countries (To be used later)
 J       = 4; %number of sectors
 US      = 1;
-%CHINA   = 57; %region number
-CHINA   = 57; %region number
+CHINA   = 57; %region number 
 
 % Elasticities
 load('DATA/BASE_FOURSECTOR.mat', 'alphas','T','gamma')
@@ -21,7 +20,8 @@ clear T
 NU      = 5.3436; %dispersion of taste shocks (In CDP: 5.3436)
 %NU      = 3; %dispersion of taste shocks (In CDP: 5.3436)
 %BETA    = 0.9605; %discount rate (0.99^4: transformed from quarterly to yearly)
-BETA    = 0.9227; %discount rate (0.99^8: transformed from quarterly to bi-annual)
+%BETA    = 0.9227; %discount rate (0.99^8: transformed from quarterly to bi-annual)
+BETA=0.96;
 
 %TAU     = ones(N*J,N); %iceberg trade cost; JF: we no longer use TAU in
 %this version
@@ -61,9 +61,9 @@ params.tech = v2struct(ESTM_BOTH, UPDT_V, UPDT_W, UPDT_V_NL, UPDT_W_NL, TOL_NL, 
 %% Productivity
 % Baseline productivity (Used in deriving initial steady state)
 T_BASE = ones(J,N,TIME*3)*2; % US (& other countries except China) productivity is constant for all period
-T_BASE(1:J,CHINA,2:TIME*3) = 1;
+T_BASE(1:J,CHINA,1:TIME*3) = 0.1;
 %Previous productivity of China (used in estimating RHO and MU)
-T_PREV = repmat(linspace(0.97,0.99,20),4,1); %Assume previous 20 periods' CHINA productivity was from 0.97 to 0.99
+T_PREV = repmat(linspace(0.05,0.1,20),4,1); %Assume previous 20 periods' CHINA productivity was from 0.05 to 0.1
 params.prod = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO, W_TRUE);
 
 T = PRODUCTIVITY_DGP(params); %objective productivity (in level)

@@ -119,7 +119,7 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     Y=NaN(R*(J),TIME);    
     Y(:,TIME)=realwages_us_nuu(:,TIME);    
     for tt=TIME-1:-1:1
-        temp0=ones(J*R,1)*Y(:,tt+1)';
+        temp0=ones(J*R,1)*(Y(:,tt+1).^BETA)';
         temp=sum(mu(:,:,tt).*temp0,2); 
         Y(:,tt)=realwages_us_nuu(:,tt).*temp;
     end    

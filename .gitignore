@@ -1,6 +1,5 @@
 DATA/
 
 FIGURES/
-.asv
-
-.sav
+*.sav
+*.asv
