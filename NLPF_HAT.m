@@ -1,4 +1,4 @@
-function [eqm_nlpf_HAT,approx_nlpf_HAT] = NLPF_HAT(params, initial, SS)
+function [eqm_nlpf_HAT,approx_nlpf_HAT] = NLPF_HAT(params, starting_point, hat_fundamentals,initial_guess)
 % Non-linear baseline perefect foresight equilibrium
 % 50 regions + 37 other countries
 %% Roll down parameters
@@ -6,16 +6,22 @@ v2struct(params.envr);
 v2struct(params.tech);
 v2struct(params.modl);
 
-%% Roll down initial values
-v2struct(initial);
+%% Roll down the initial guess for the solution
+v2struct(initial_guess);
+
+%% Roll down time differences in fundamentals; only T_HAT in this vintage
+v2struct(hat_fundamentals); %this overwrites TIME in params.envr
 
 %%%%%%%%%Algorithm%%%%%%%%%%%%%
 %%%Dynamic problem%%%
 Ymax = 1; ITER_DYN = 1;
 while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
+    % Rolling out the starting point for the solution. Note that this
+    % initial value CANNOT be moved to outside the while loop
+    v2struct(starting_point);
+
     %Solving for the path of migration flows mu
    
-
     Vaux=reshape(v_td,1,J*R,TIME);
     Vaux2=repmat(Vaux,R*J,1,1); % Vaux2, first dimension is repeation, second dimension is the value of each cell in a period, ordered by country, i.e., two consecutive entries are obs from different sectors for the same country; note that this needs be consistent with wage and value function update below
    
@@ -54,20 +60,6 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
         Ldyn(:,:,t+1)=reshape(aux5,J,R);   %this is the path for employment
     end
     %Ldyn(:,:,TIME)=0;
-    % run the model once to match the initial data with our setting
-    w_guess   = ones(J,N); %initial guess for wage
-    p_guess   = ones(J,N); %initial guess for good prices
-    kappa_hat = ones(J*N,N); % relative change in trade cost
-    
-    load('DATA/BASE_FOURSECTOR.mat', 'VALjn00', 'Din00')
-    VALjn00   = VALjn00*4; % change quarterly data to annual
-    Ljn_hat00 = ones(J,N);
-    T_hat00   = ones(J,N);
-    [~, ~, ~, Din00_matched, X_matched, VALjn00_matched] = NLPF_TEMP_HAT(params, VALjn00, Din00, kappa_hat, T_hat00, Ljn_hat00, w_guess, p_guess);
-    % update the initial values                                                
-    VALjn0    = VALjn00_matched; %Labor compensation (w*L)
-    Din0      = Din00_matched; %bilateral trade shares
-    X0        = X_matched; %Total expenditure 
 
     %%%%Temporary Equilibrium%%%%%  
     Ltemp=Ldyn;   %path of employment 
@@ -82,6 +74,11 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     VALjn00(:,:,1) = VALjn0;
     X              = zeros(J,N,TIME);   %expenditure
     X(:,:,1)       = X0;
+    
+    w_guess   = ones(J,N); %initial guess for wage
+    p_guess   = ones(J,N); %initial guess for good prices
+    kappa_hat = ones(J*N,N); % relative change in trade cost
+
     %static sub-problem at each time t
     for t=1:TIME-1
         if mod(t,10)==0
@@ -175,20 +172,6 @@ for t=1:TIME
     end
 end
 
-%{
-for t=TIME-1:TIME
-    varrho(:,:,t)  = varrho(:,:,TIME-2);
-    pi(:,:,t)      = pi(:,:,TIME-2);
-    chi(:,:,t)     = chi(:,:,TIME-2);
-    zeta(:,:,t)    = zeta(:,:,TIME-2);
-    lambda(:,:,t)  = lambda(:,:,TIME-2);
-    mu(:,:,t)      = mu(:,:,TIME-2);
-    wf00(:,:,t)    = wf00(:,:,TIME-2);
-    pf00(:,:,t)    = pf00(:,:,TIME-2);
-    VALjn00(:,:,t) = VALjn00(:,:,TIME-2);
-    X(:,:,t)       = X(:,:,TIME-2);
-end
-%}
 %normalize
 %for t=1:TIME
 %    for i=1:R*J
@@ -197,6 +180,10 @@ end
 %end
 
 
+eqm_nlpf_HAT=v2struct(v_td, Ldyn, realwages, wf00, pf00, VALjn00, X);
+approx_nlpf_HAT= v2struct(mu, pi, varrho, chi, zeta, lambda);
+
+%{
 if SS==1
     eqm_nlpf_HAT_SS = v2struct(v_td, Ldyn, realwages, wf00, pf00, VALjn00, X);
     approx_nlpf_HAT_SS = v2struct(mu, pi, varrho, chi, zeta, lambda);
@@ -212,11 +199,9 @@ elseif SS==0
 else
     eqm_nlpf_HAT_belief = v2struct(v_td, Ldyn, realwages, wf00, pf00, VALjn00, X);
     approx_nlpf_HAT_belief = v2struct(mu, pi, varrho, chi, zeta, lambda);
-    eqm_nlpf_HAT = eqm_nlpf_HAT_belief;
-    approx_nlpf_HAT = approx_nlpf_HAT_belief;
     save('DATA/NLPF_HAT_BELIEF.mat', 'eqm_nlpf_HAT_belief','approx_nlpf_HAT_belief'); 
 end
-
+%}
 
 
 end

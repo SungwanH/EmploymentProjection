@@ -18,22 +18,23 @@ lambda  =   approx.lambda;
 
 T_hat = E_T_hat(:,:,:,t2); %belief at t2 period
 
-v_hat = zeros(R*J,TIME);
+v_hat = NaN(R*J,TIME);
 v_hat(:,t1:TIME) = V(:,t1:TIME); % initial value
 
-L_hat = zeros(R*J,TIME);
-p_hat = zeros(R*J,TIME);
-pi_hat = zeros(R*J,R,TIME);
-rw_hat = zeros(J,N,TIME);
+L_hat = NaN(R*J,TIME);
+p_hat = NaN(R*J,TIME);
+pi_hat = NaN(R*J,R,TIME);
+rw_hat = NaN(J,N,TIME);
+    mu_hat = NaN(R*J,R*J,TIME);
+
 %%%%%%%%%Algorithm%%%%%%%%%%%%%
 
 %%%Dynamic problem%%%
 
 VMAX =1; ITER_DYN =1;
-
+fprintf('%s=', 'VMAX')
 while (ITER_DYN <= MAXIT) && (VMAX > TOLDYN)
     % Step 2. given the path of value(v_hat), solve for the path of mu_hat
-    mu_hat = zeros(R*J,R*J,TIME);
 
     for t =t1:TIME-1
         mu_aux = mu(:,:,t);
@@ -59,9 +60,9 @@ while (ITER_DYN <= MAXIT) && (VMAX > TOLDYN)
     end
     rw_hat_RJ = reshape(rw_hat(:,1:R,:),[R*J,TIME]); 
     % Step 5. solve for a new path of v_hat
-    v_hat_update = zeros(R*J,TIME);
+    v_hat_update = NaN(R*J,TIME);
     %v_hat_SS(:,1) = (eye(R*J) - BETA * mu(:,:,TIME))\(w_hat_RJ(1:R*J,TIME) - P_hat(1:R*J,TIME));
-    v_hat_SS(:,1) = (eye(R*J) - BETA * mu(:,:,TIME))\(rw_hat_RJ(:,TIME));
+    v_hat_SS = (eye(R*J) - BETA * mu(:,:,TIME))\(rw_hat_RJ(:,TIME));
     v_hat_update(:,TIME) = v_hat_SS;
 
     for t=TIME-1:-1:t1 
@@ -73,8 +74,9 @@ while (ITER_DYN <= MAXIT) && (VMAX > TOLDYN)
         checkV(t,1)=max(abs(v_hat_update(:,t)-v_hat(:,t)));
     %    checkV(t,1) = norm((v_hat_update(:,t) - v_hat(:,t))./(v_hat_update(:,t)),1);
     end
-    VMAX=max(checkV)
-        if ITER_DYN >1000 || sum(isnan(v_hat_update(:)))>0
+    VMAX=max(checkV);
+     fprintf('%3.2e, ', VMAX);
+        if ITER_DYN >1000 || sum(sum(isnan(v_hat_update(:,t1:end))))>0
             checkV(t1:TIME)
             t1
             stop
