@@ -31,9 +31,9 @@ BETA    = 0.9227; %discount rate (0.99^8: transformed from quarterly to bi-annua
 % Baseline: RHO 0.85 ENDT 20
 SIGMA       = 0.01; % s.d. of catch-up
 W_TRUE      = 0.5; % True weight on RHO when deriving RHO_HAT
-ENDT        = 10; %Last period of learning (PF starts from here)
-ENDT_SAMPLE = 10;
-ENDT_DGP    = 10;
+ENDT        = 1; %Last period of learning (PF starts from here)
+ENDT_SAMPLE = 1;
+ENDT_DGP    = 1;
 EPST        = ENDT; %Length of epsilon draw
 
 % Learning

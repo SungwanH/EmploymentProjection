@@ -116,7 +116,7 @@ end
 if RUN_DGP ==1
 disp('#################')
 disp('Running DGP')
-    [eqm_dgp, approx_dgp] = DGP(params, W_TRUE, eqm_nlpf_HAT, approx_nlpf_HAT);
+    [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_HAT, approx_nlpf_HAT);
 else
     load('DATA/DGP.mat', 'eqm_dgp','approx_dgp'); 
 end

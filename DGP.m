@@ -1,10 +1,12 @@
-function [eqm_dgp, approx_dgp] = DGP(params, W, eqm_nlpf, approx_nlpf)
+function [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf, approx_nlpf)
 % This code gives DGP+PF path
 % From t=ENDT, people gets perfect foresight
 % Until ENDT, people imperfectly guess the future path of productivity
 % input:
 % params: parameters (structure)
-% W: Weight in learning parameter (RHO_HAT)
+% W: Weight in learning parameter (RHO_HAT); the current set of code does
+% not use, in fact, W is used below as wages...so I commented out this
+% input
 % eqm_base: equilibrium outcomes obtained from BASE_LEVEL (perefect foresight level outcome)
 % approx_base: approximation points obtained from BASE_LEVEL (perefect foresight level outcome)
 
