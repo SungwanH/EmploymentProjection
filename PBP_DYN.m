@@ -25,7 +25,7 @@ L_hat = NaN(R*J,TIME);
 p_hat = NaN(R*J,TIME);
 pi_hat = NaN(R*J,R,TIME);
 rw_hat = NaN(J,N,TIME);
-    mu_hat = NaN(R*J,R*J,TIME);
+mu_hat = NaN(R*J,R*J,TIME);
 
 %%%%%%%%%Algorithm%%%%%%%%%%%%%
 

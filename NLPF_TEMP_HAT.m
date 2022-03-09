@@ -111,14 +111,15 @@ while (ITER_TEMP <= MAXIT) && ((wfmax > TOL_NL_TEMP) || (pfmax > TOL_NL_TEMP))  
     pfmax    = max(max(pfdev));
     
 %    wfdev    = abs(w_new - wf0); % Checking tolerance
+    w_new=w_new./w_new(1);
     wfdev    = abs(log(w_new) - log(wf0));
     wf0      = w_new*UPDT_W_NL + wf0*(1-UPDT_W_NL);
     wfmax    = max(max(wfdev));
     ITER_TEMP       = ITER_TEMP + 1;
     
 % normalize nominal wage change in 1 to 0.    
-     wf0=wf0./wf0(1);
-     pf0=pf0./wf0(1);
+%     wf0=wf0./wf0(1);
+%     pf0=pf0./wf0(1);
 end
 
 % Price index

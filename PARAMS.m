@@ -46,10 +46,10 @@ UPDT_V      = 0.5; %update speed for value loop (lower value->conservative)
 UPDT_W      = 0.3; %update speed for wage loop (lower value->conservative)
 UPDT_V_NL   = 0.5; %update speed for nonlinear value loop (lower value->conservative)
 UPDT_W_NL   = 0.3; %update speed for nonlinear wage loop (lower value->conservative)
-TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
-TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
-TOLDYN      = 1E-7;  %tolerance rate for linear dynamic equilibrium
-TOLTEMP     = 1E-7;  % tolerance rate for linear temporary equilibrium
+TOL_NL      = 1E-9;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
+TOL_NL_TEMP = 1E-11;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
+TOLDYN      = 1E-9;  %tolerance rate for linear dynamic equilibrium
+TOLTEMP     = 1E-11;  % tolerance rate for linear temporary equilibrium
 MAXIT       = 1E+8; %maximum number of iterations
 
 
@@ -61,9 +61,9 @@ params.tech = v2struct(ESTM_BOTH, UPDT_V, UPDT_W, UPDT_V_NL, UPDT_W_NL, TOL_NL, 
 %% Productivity
 % Baseline productivity (Used in deriving initial steady state)
 T_BASE = ones(J,N,TIME*3)*2; % US (& other countries except China) productivity is constant for all period
-T_BASE(1:J,CHINA,1:TIME*3) = 0.1;
+T_BASE(1:J,CHINA,1:TIME*3) = 1.5;
 %Previous productivity of China (used in estimating RHO and MU)
-T_PREV = repmat(linspace(0.05,0.1,20),4,1); %Assume previous 20 periods' CHINA productivity was from 0.0to 0.1
+T_PREV = repmat(linspace(1.4,1.5,20),4,1); %Assume previous 20 periods' CHINA productivity was from 0.0to 0.1
 params.prod = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO, W_TRUE);
 
 T = PRODUCTIVITY_DGP(params); %objective productivity (in level)

@@ -37,7 +37,7 @@ if RUN_NLPF_HAT_SS ==1
     temporary_struct.Ljn_hat00 = ones(J,N);
     temporary_struct.T_hat00   = ones(J,N);
     temporary_struct.Din00=data_4_sector.Din00;
-
+    temporary_struct.Din0=temporary_struct.Din00./sum(temporary_struct.Din00,2);
     [~, ~, ~, temporary_struct.Din00_matched, temporary_struct.X_matched, temporary_struct.VALjn00_matched] =...
         NLPF_TEMP_HAT(params, temporary_struct.VALjn00, temporary_struct.Din00, temporary_struct.kappa_hat, temporary_struct.T_hat00, temporary_struct.Ljn_hat00, ...
         temporary_struct. w_guess, temporary_struct.p_guess);
@@ -62,8 +62,8 @@ if RUN_NLPF_HAT_SS ==1
     starting_point_ss.mu0=temporary_struct.mu0;
     
     initial_guess_ss.v_td=ones(R*(J),TIME_SS);
-%    load('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS'); %one-shot convergence
-%    initial_guess_ss.v_td= eqm_nlpf_HAT_SS.v_td(:,1:length(eqm_nlpf_HAT_SS.v_td));
+    load('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS'); %one-shot convergence
+    initial_guess_ss.v_td= eqm_nlpf_HAT_SS.v_td(:,1:length(eqm_nlpf_HAT_SS.v_td));
     
          
     [eqm_nlpf_HAT_SS, approx_nlpf_HAT_SS] = NLPF_HAT(params, starting_point_ss,hat_fundamental_ss,initial_guess_ss);
@@ -98,8 +98,8 @@ if RUN_NLPF_HAT ==1
 
     initial_guess_nlpf.v_td=ones(R*(J),TIME); %Initial guess for the Ys (exp(Vt+1-V)^1/NU)
     
- %   load('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT'); %one-shot convergence
- %   initial_guess_nlpf.v_td= eqm_nlpf_HAT.v_td(:,1:TIME);
+    load('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT'); %one-shot convergence
+    initial_guess_nlpf.v_td= eqm_nlpf_HAT.v_td(:,1:TIME);
     
     [eqm_nlpf_HAT, approx_nlpf_HAT] = NLPF_HAT(params_NLPF, starting_point_nlpf,hat_fundamental_NLPF,initial_guess_nlpf);
 
@@ -127,7 +127,7 @@ params_NLPF_belief=rmfield(params,'prod');
 hat_fundamental_NLPF_belief.TIME=TIME;
 hat_fundamental_NLPF_belief.T_HAT=ones(J,N,TIME);
 for t=1:TIME-1
-    hat_fundamental_NLPF_belief.T_HAT(:,:,t+1)=params.prod.T_belief(:,:,t+1,1)./T_belief(:,:,t,1); 
+    hat_fundamental_NLPF_belief.T_HAT(:,:,t+1)=params.prod.T_belief(:,:,t+1,1)./params.prod.T_belief(:,:,t,1); 
 end
 
 disp('#################')
