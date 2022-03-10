@@ -17,6 +17,10 @@ RUN_RECUR       = 1;
 % Load initial data
 data_4_sector=load('DATA/BASE_FOURSECTOR.mat', 'VALjn00', 'Din00','mu0','L0');
 
+
+%%Using fake data
+ data_4_sector = FAKE_DATA(params);
+
 %% Obtain non-linear level outcome in HAT (Obtain initial Steady State)
 params_ss=rmfield(params,'prod');
 hat_fundamental_ss.T_HAT=params.prod.T_HAT_SS;
@@ -45,8 +49,9 @@ if RUN_NLPF_HAT_SS ==1
     % Scale initial labor allocation it to biannually
     % for quicker convergence
     %Change to Annual basis
-    [temporary_struct.VV,temporary_struct.D] = eig(data_4_sector.mu0(:,:));
-    temporary_struct.mu0 = real(temporary_struct.VV * (temporary_struct.D)^8 * inv(temporary_struct.VV));
+    %[temporary_struct.VV,temporary_struct.D] = eig(data_4_sector.mu0(:,:));   
+    %temporary_struct.mu0 = real(temporary_struct.VV * (temporary_struct.D)^8 * inv(temporary_struct.VV));
+    temporary_struct.mu0=data_4_sector.mu0(:,:);
     temporary_struct.L00 =data_4_sector.L0(:);
 
     % start from steady state
@@ -62,8 +67,8 @@ if RUN_NLPF_HAT_SS ==1
     starting_point_ss.mu0=temporary_struct.mu0;
     
     initial_guess_ss.v_td=ones(R*(J),TIME_SS);
-    load('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS'); %one-shot convergence
-    initial_guess_ss.v_td= eqm_nlpf_HAT_SS.v_td(:,1:length(eqm_nlpf_HAT_SS.v_td));
+%    load('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS'); %one-shot convergence
+ %   initial_guess_ss.v_td= eqm_nlpf_HAT_SS.v_td(:,1:length(eqm_nlpf_HAT_SS.v_td));
     
          
     [eqm_nlpf_HAT_SS, approx_nlpf_HAT_SS] = NLPF_HAT(params, starting_point_ss,hat_fundamental_ss,initial_guess_ss);
@@ -98,8 +103,8 @@ if RUN_NLPF_HAT ==1
 
     initial_guess_nlpf.v_td=ones(R*(J),TIME); %Initial guess for the Ys (exp(Vt+1-V)^1/NU)
     
-    load('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT'); %one-shot convergence
-    initial_guess_nlpf.v_td= eqm_nlpf_HAT.v_td(:,1:TIME);
+%    load('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT'); %one-shot convergence
+%    initial_guess_nlpf.v_td= eqm_nlpf_HAT.v_td(:,1:TIME);
     
     [eqm_nlpf_HAT, approx_nlpf_HAT] = NLPF_HAT(params_NLPF, starting_point_nlpf,hat_fundamental_NLPF,initial_guess_nlpf);
 
@@ -120,6 +125,37 @@ disp('Running DGP')
 else
     load('DATA/DGP.mat', 'eqm_dgp','approx_dgp'); 
 end
+
+
+
+%% DGP linearize around SS
+load('DATA/NLPF_HAT_SS.mat','eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS'); 
+
+params_lin_around_ss=params;
+params_lin_around_ss.prod.E_T_hat=params.prod.E_T_hat;
+eqm_nlpf_HAT_SS_TIME=eqm_nlpf_HAT_SS;
+approx_nlpf_HAT_SS_TIME=approx_nlpf_HAT_SS;
+
+eqm_nlpf_HAT_SS_TIME.v_td=eqm_nlpf_HAT_SS_TIME.v_td(:,end-TIME+1:end);
+eqm_nlpf_HAT_SS_TIME.Ldyn=eqm_nlpf_HAT_SS_TIME.Ldyn(:,:,end-TIME+1:end);
+eqm_nlpf_HAT_SS_TIME.realwages=eqm_nlpf_HAT_SS_TIME.realwages(:,:,end-TIME+1:end);
+eqm_nlpf_HAT_SS_TIME.wf00=eqm_nlpf_HAT_SS_TIME.wf00(:,:,end-TIME+1:end);
+eqm_nlpf_HAT_SS_TIME.pf00=eqm_nlpf_HAT_SS_TIME.pf00(:,:,end-TIME+1:end);
+eqm_nlpf_HAT_SS_TIME.VALjn00=eqm_nlpf_HAT_SS_TIME.VALjn00(:,:,end-TIME+1:end);
+eqm_nlpf_HAT_SS_TIME.X=eqm_nlpf_HAT_SS_TIME.X(:,:,end-TIME+1:end);
+
+approx_nlpf_HAT_SS_TIME.mu=approx_nlpf_HAT_SS_TIME.mu(:,:,end-TIME+1:end);
+approx_nlpf_HAT_SS_TIME.pi=approx_nlpf_HAT_SS_TIME.pi(:,:,end-TIME+1:end);
+approx_nlpf_HAT_SS_TIME.varrho=approx_nlpf_HAT_SS_TIME.varrho(:,:,end-TIME+1:end);
+approx_nlpf_HAT_SS_TIME.chi=approx_nlpf_HAT_SS_TIME.chi(:,:,end-TIME+1:end);
+approx_nlpf_HAT_SS_TIME.zeta=approx_nlpf_HAT_SS_TIME.zeta(:,:,end-TIME+1:end);
+approx_nlpf_HAT_SS_TIME.lambda=approx_nlpf_HAT_SS_TIME.lambda(:,:,end-TIME+1:end);
+
+
+
+
+[eqm_lin_around_ss, approx_lin_around_ss] = DGP(params_lin_around_ss, eqm_nlpf_HAT_SS_TIME, approx_nlpf_HAT_SS_TIME);
+
 
 
 %% Test (nonlinear solution to the belief productivity in the first period)'
@@ -151,12 +187,20 @@ L_belief_agg_dgp = permute(sum(L_belief_dgp,1),[2,3,4,1]);
 figure
 hold on
 title('Labor California (level)')
-plot(1:TIME-1,Ldynamic(1,1:TIME-1,1))
-plot(1:TIME-1,Ldynamic_belief(1,1:TIME-1,1),'--')
-plot(1:TIME-1,L_belief_agg_dgp(1,1:TIME-1,1,1),':')
+plot(1:TIME-1,Ldynamic(5,1:TIME-1,1))
+plot(1:TIME-1,Ldynamic_belief(5,1:TIME-1,1),'--')
+plot(1:TIME-1,L_belief_agg_dgp(5,1:TIME-1,2),':')
 legend('Nonlinear PF','Nonlinear Belief','Linear Belief','location','best')
 saveas(gcf,'figures/NLPF_TEST.png')
 
+
+% Temporary: manufacturing employment share
+temp1=reshape(sum(eqm_nlpf_HAT.Ldyn(1,CHINA,:),1),1,100);
+temp3=reshape(sum(eqm_lin_around_ss.L_belief_dgp(1,CHINA,:,1),1),1,100);
+
+plot(1:100,log(temp1)-log(0.1))
+hold on
+plot(1:100,reshape(eqm_lin_around_ss.L_hat(1,1,:,1),1,100))
 
 %% Obtain Period by period DGP & PF deviation
 if RUN_RECUR ==1

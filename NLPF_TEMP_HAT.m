@@ -123,7 +123,7 @@ while (ITER_TEMP <= MAXIT) && ((wfmax > TOL_NL_TEMP) || (pfmax > TOL_NL_TEMP))  
 end
 
 % Price index
-Pf0 = prod(pf0.^(ALPHAS));
+Pf0 = prod(pf0.^(ALPHAS),1);
 % Update labor income
 VALjn = VALjn0 .* (wf0 .* Ljn_hat);
 %disp('Number of iteration')

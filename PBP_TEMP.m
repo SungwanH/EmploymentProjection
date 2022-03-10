@@ -25,7 +25,7 @@ L_hat = NaN(J,N,TIME);
 for t=1:TIME
     L_hat(:,1:R,t)=reshape(L_hat_R(:,t),J,R);
 end
-L_hat(1:J,R+1:N,1:TIME) = zeros(J,N-R,TIME); %There is no migration in other countries
+L_hat(1:J,(R+1):N,1:TIME) = zeros(J,N-R,TIME); %There is no migration in other countries
 
 ITER_TEMP = 1;
 wmax=1;
@@ -139,6 +139,7 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
             end
         end
         w_update(:,:,t)= GAMMA.*sum(RHS_temp,3) -L_temp;
+        w_update(:,:,t)=w_update(:,:,t)-w_update(1,1,t); %normalize the first wage to be a constant across periods; should not change anything
     end
 
     for t=t1:TIME

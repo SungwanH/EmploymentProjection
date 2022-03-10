@@ -38,7 +38,7 @@ while (ITER_DYN <= MAXIT) && (VMAX > TOLDYN)
 
     for t =t1:TIME-1
         mu_aux = mu(:,:,t);
-        mu_hat(:,:,t) = (BETA/NU) * v_hat(:,t+1)' - (BETA/NU) * mu_aux*v_hat(:,t+1);
+        mu_hat(:,:,t) = (BETA/NU) * ones(R*J,1)*v_hat(:,t+1)' - (BETA/NU) * mu_aux*v_hat(:,t+1);
     end
 
     % Step 3. given mu_hat, solve for the path of labor(L_hat)
@@ -56,7 +56,7 @@ while (ITER_DYN <= MAXIT) && (VMAX > TOLDYN)
     [w_hat, p_hat, P_hat, pi_hat, X_hat] = PBP_TEMP(params, t1, T_hat, kappa_hat, W, L_hat, approx);
     W= w_hat; % will be used as next period's initial value
     for t=t1:TIME
-        rw_hat(:,:,t) = w_hat(:,:,t) - ones(J,1)*P_hat(:,:,t); %real wage
+        rw_hat(:,:,t) = w_hat(:,:,t) - ones(J,1)*P_hat(1,:,t); %real wage
     end
     rw_hat_RJ = reshape(rw_hat(:,1:R,:),[R*J,TIME]); 
     % Step 5. solve for a new path of v_hat
@@ -66,7 +66,7 @@ while (ITER_DYN <= MAXIT) && (VMAX > TOLDYN)
     v_hat_update(:,TIME) = v_hat_SS;
 
     for t=TIME-1:-1:t1 
-        mu_aux = mu(1:R*J,1:R*J,t);
+        mu_aux = mu(:,:,t);
         v_hat_update(:,t) = rw_hat_RJ(:,t) + BETA * mu_aux(:,:)*v_hat_update(:,t+1);
     end
 

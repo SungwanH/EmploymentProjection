@@ -96,8 +96,10 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
         pi(:,:,t+1)      = pi_temp;
         X(:,:,t+1)       = X_temp;
         VALjn00(:,:,t+1) = VALjn;
-        w_guess          = wf0;
-        p_guess          = pf0;
+%     w_guess          = wf0;
+%     p_guess          = pf0;
+
+        
         %updating the initial conditions
         VALjn0=VALjn;
         Din0=pi_temp;
@@ -115,19 +117,17 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     % value function from this iteration
     Y=NaN(R*(J),TIME);    
     Y(:,TIME)=realwages_us_nuu(:,TIME);    
-    for tt=TIME-1:-1:1
+    for tt=TIME-1:-1:2
         temp0=ones(J*R,1)*(Y(:,tt+1).^BETA)';
         temp=sum(mu(:,:,tt).*temp0,2); 
         Y(:,tt)=realwages_us_nuu(:,tt).*temp;
     end    
     
     %Excess function
-    checkY = zeros(TIME,1); 
-    for t=1:TIME
-        checkY(t,1) = max(abs(log(Y(:,t))-log(v_td(:,t))));
-    end
+    checkY = zeros(TIME-1,1); 
+    checkY = max(abs(log(Y(:,2:end))-log(v_td(:,2:end))));
     Ymax = max(checkY)    
-    v_td = UPDT_V_NL * Y + (1-UPDT_V_NL) * v_td;
+    v_td(:,2:end) = UPDT_V_NL * Y(:,2:end) + (1-UPDT_V_NL) * v_td(:,2:end);
     ITER_DYN = ITER_DYN+1;
 end
 
