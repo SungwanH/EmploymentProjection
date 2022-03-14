@@ -17,6 +17,7 @@ mu      =   approx.mu; % note that mu is organized by country, i.e., two consecu
 lambda  =   approx.lambda;
 
 T_hat = E_T_hat(:,:,:,t2); %belief at t2 period
+%T_hat(:,:,t1,t2) = zeros(J,N);
 
 v_hat = NaN(R*J,TIME);
 v_hat(:,t1:TIME) = V(:,t1:TIME); % initial value
@@ -40,7 +41,7 @@ while (ITER_DYN <= MAXIT) && (VMAX > TOLDYN)
         mu_aux = mu(:,:,t);
         mu_hat(:,:,t) = (BETA/NU) * ones(R*J,1)*v_hat(:,t+1)' - (BETA/NU) * mu_aux*v_hat(:,t+1);
     end
-
+    mu_hat(:,:,TIME) = mu_hat(:,:,TIME-1);
     % Step 3. given mu_hat, solve for the path of labor(L_hat)
     % L(nj)_t+1 = lambda(ik,nj)_t+1 * (mu(ik,nj)_t + L(ik)_t)
     L_hat(:,t1) = L;
@@ -83,7 +84,7 @@ while (ITER_DYN <= MAXIT) && (VMAX > TOLDYN)
             disp('Outer loop err')
         end
 
-    v_hat=(1-UPDT_V)*v_hat+(UPDT_V)*v_hat_update;
+    v_hat(:,t1:TIME)=(1-UPDT_V)*v_hat(:,t1:TIME)+(UPDT_V)*v_hat_update(:,t1:TIME);
 
 
     ITER_DYN=ITER_DYN+1;
