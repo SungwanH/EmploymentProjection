@@ -18,17 +18,14 @@ clear alphas
 clear T
 
 
-
-
-
 NU      = 5.3436; %dispersion of taste shocks (In CDP: 5.3436)
 BETA    = 0.9227; %discount rate (0.99^8: transformed from quarterly to bi-annual)
 
 
 % Baseline: RHO 0.85 ENDT 20
 SIGMA       = 0.01; % s.d. of catch-up
-W_TRUE      = 0.5; % True weight on RHO when deriving RHO_HAT
-ENDT        = 1; %Last period of learning (PF starts from here)
+W_TRUE      = 0.1; % True weight on RHO when deriving RHO_HAT
+ENDT        = 5; %Last period of learning (PF starts from here)
 ENDT_SAMPLE = 1;
 ENDT_DGP    = 1;
 EPST        = ENDT; %Length of epsilon draw
@@ -44,7 +41,7 @@ N       = 10;
 R       = 10; %number of US regions
 C       = 0; %number of non-US countries (To be used later)
 J       = 1; %number of sectors
-US      = 1;
+US      = 2;
 CHINA   = 1; %region number for now assume the shock is to California
 
 ALPHAS=1/J*ones(J,N);
@@ -63,8 +60,8 @@ NU = 3*BETA;
 ESTM_BOTH   = 1; % if ESTM_BOTH =0, estimate MU only. if =1, estimate both MU and RHO
 UPDT_V      = 0.5; %update speed for value loop (lower value->conservative)
 UPDT_W      = 0.3; %update speed for wage loop (lower value->conservative)
-UPDT_V_NL   = 0.5; %update speed for nonlinear value loop (lower value->conservative)
-UPDT_W_NL   = 0.3; %update speed for nonlinear wage loop (lower value->conservative)
+UPDT_V_NL   = 0.3; %update speed for nonlinear value loop (lower value->conservative)
+UPDT_W_NL   = 0.1; %update speed for nonlinear wage loop (lower value->conservative)
 TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
 TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
 TOLDYN      = 1E-7;  %tolerance rate for linear dynamic equilibrium
@@ -80,9 +77,9 @@ params.tech = v2struct(ESTM_BOTH, UPDT_V, UPDT_W, UPDT_V_NL, UPDT_W_NL, TOL_NL, 
 %% Productivity
 % Baseline productivity (Used in deriving initial steady state)
 T_BASE = ones(J,N,TIME*3)*2; % US (& other countries except China) productivity is constant for all period
-T_BASE(:,CHINA,1:TIME*3) = 1.8;
+T_BASE(:,CHINA,1:TIME*3) = 1;
 %Previous productivity of China (used in estimating RHO and MU)
-T_PREV = repmat(linspace(1.4,1.5,20),4,1); %Assume previous 20 periods' CHINA productivity was from 0.0to 0.1
+T_PREV = repmat(linspace(0.9,1,20),J,1); %Assume previous 20 periods' CHINA productivity was from 0.0to 0.1
 params.prod = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO, W_TRUE);
 
 T = PRODUCTIVITY_DGP(params); %objective productivity (in level)
@@ -128,12 +125,16 @@ end
 %end
 % add deviation variables 
 
-
+%{
 %% Productivity: one time productivity shock in China (manufacturing only) 
 T_BASE = ones(J,N,TIME*3)*2; % 
 T=T_BASE(:,:,1:TIME);
 T(1,CHINA,2:end)=0.5;
 
+params.prod = v2struct(MU, SIGMA, RHO, W_TRUE, T_BASE, T_PREV, T, T_HAT, T_HAT_SS);
+
+% Derive productivity belief log deviation from objective productivity
+T_belief = BELIEF(params, W_TRUE);
 for t=1:TIME_SS-1
     T_HAT_SS(:,:,t+1) = T_BASE(:,:,t+1)./T_BASE(:,:,t); %relative change in productivity (US: 2 for all period, CHINA: 1 for all period except the first period)
 end
@@ -145,11 +146,22 @@ end
 E_T_hat  = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
 for tt=1:ENDT+1
     for j=1:J
-        E_T_hat(j,CHINA,:,tt) = log(T(j,CHINA,1:TIME)) - log(T_BASE(j,CHINA,1:TIME));
+        E_T_hat(j,CHINA,:,tt) = log(T_belief(j,CHINA,:,tt)) - log(T(j,CHINA,:));
     end
 end
-
-
+% perfect foresight deviation from belief
+E_T_hat_pf = zeros(J,N,TIME,ENDT+1);
+for tt=1:ENDT+1
+    for j=1:J
+       E_T_hat_pf(j,CHINA,:,tt) = -log(T_belief(j,CHINA,:,tt)) + log(T(j,CHINA,:));
+    end
+end
+%for tt=1:ENDT+1
+%    for j=1:J
+%        E_T_hat(j,CHINA,:,tt) = log(T_belief(j,CHINA,:,tt)) - log(T(j,CHINA,:));
+%    end
+%end
+%}
 params.prod = v2struct(MU, SIGMA, RHO, W_TRUE, T_BASE, T_PREV, T, T_HAT, T_HAT_SS, T_belief, E_T_hat, E_T_hat_pf);
 
 end
