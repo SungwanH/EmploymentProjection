@@ -1,10 +1,23 @@
-function FIGURES(params, eqm_nlpf_HAT_SS, eqm_nlpf_HAT, eqm_dgp, eqm_recur)
+function FIGURES(params, eqm_nlpf_HAT_SS, eqm_nlpf_HAT, eqm_nlpf_dd, eqm_nlpf_dd_belief, eqm_dgp, eqm_recur)
 
 v2struct(params.envr);
 v2struct(params.prod);
 %% Belief 
 T_belief = BELIEF(params, W_TRUE);
 
+
+
+figure
+hold on
+title('Objective Productivity and Belief (sector 1)')
+plot(1:TIME, permute(T(1,CHINA,1:TIME),[2,3,1]))
+plot(1:TIME, permute(T_belief(1,CHINA,1:TIME,1),[2,3,4,1]),'--')
+plot(3:TIME, permute(T_belief(1,CHINA,3:TIME,3),[2,3,4,1]),'--')
+plot(5:TIME, permute(T_belief(1,CHINA,5:TIME,5),[2,3,4,1]),'--')
+plot(10:TIME, permute(T_belief(1,CHINA,10:TIME,10),[2,3,4,1]),'--')
+legend('Productivity','Belief at t=1','Belief at t=5','Belief at t=10','location','best')
+saveas(gcf,'figures/prod_and_belief_sec1.png')
+%{
 figure
 hold on
 title('Productivity Belief across Sector')
@@ -16,17 +29,6 @@ saveas(gcf,'figures/belief_sectors.png')
 
 figure
 hold on
-title('Objective Productivity and Belief (sector 1)')
-plot(1:TIME, permute(T(1,CHINA,1:TIME),[2,3,1]))
-plot(1:TIME, permute(T_belief(1,CHINA,1:TIME,1),[2,3,4,1]),'--')
-plot(3:TIME, permute(T_belief(1,CHINA,3:TIME,3),[2,3,4,1]),'--')
-plot(5:TIME, permute(T_belief(1,CHINA,5:TIME,5),[2,3,4,1]),'--')
-plot(7:TIME, permute(T_belief(1,CHINA,7:TIME,7),[2,3,4,1]),'--')
-plot(10:TIME, permute(T_belief(1,CHINA,10:TIME,10),[2,3,4,1]),'--')
-legend('Productivity','Belief at t=1','Belief at t=5','Belief at t=10','location','best')
-saveas(gcf,'figures/prod_and_belief_sec1.png')
-figure
-hold on
 title('Objective Productivity and Belief (sector 2)')
 plot(1:TIME, permute(T(2,CHINA,1:TIME),[2,3,1]))
 plot(1:TIME, permute(T_belief(2,CHINA,1:TIME,1),[2,3,4,1]),'--')
@@ -36,15 +38,15 @@ plot(7:TIME, permute(T_belief(2,CHINA,7:TIME,7),[2,3,4,1]),'--')
 plot(10:TIME, permute(T_belief(2,CHINA,10:TIME,10),[2,3,4,1]),'--')
 legend('Productivity','Belief at t=1','Belief at t=5','Belief at t=10','location','best')
 saveas(gcf,'figures/prod_and_belief_sec2.png')
-
+%}
 %% nonlinear perfect foresight
 v_td = eqm_nlpf_HAT.v_td;
 v_td_SS = eqm_nlpf_HAT_SS.v_td;
 Ldynamic = permute(sum(eqm_nlpf_HAT.Ldyn,1),[2,3,1]);
 
-US_manu_share_in_world=reshape(sum(eqm_nlpf_HAT.VALjn00(1,1:50,:),2)./sum(eqm_nlpf_HAT.VALjn00(1,:,:),2),TIME,1);
-LdynamicManu= reshape(sum(eqm_nlpf_HAT.Ldyn(1,:,:),2),TIME,1);
-LdynamicServ= reshape(sum(eqm_nlpf_HAT.Ldyn(4,:,:),2),TIME,1);
+US_manu_share_in_world=reshape(sum(eqm_nlpf_HAT.VALjn00(1,1:R,:),2)./sum(eqm_nlpf_HAT.VALjn00(1,:,:),2),TIME,1);
+%LdynamicManu= reshape(sum(eqm_nlpf_HAT.Ldyn(1,:,:),2),TIME,1);
+%LdynamicServ= reshape(sum(eqm_nlpf_HAT.Ldyn(4,:,:),2),TIME,1);
 
 Ldynamic_SS = permute(sum(eqm_nlpf_HAT_SS.Ldyn,1),[2,3,1]);
 for t=1:TIME-1
@@ -117,7 +119,7 @@ hold on
 title('Perfect Foresight: Real wages California')
  plot(1:TIME,realwages_fig(5,1:TIME))
 saveas(gcf,'figures/realwage_level_CAL.png')
-
+%{
 figure
 hold on
 title('Perfect Foresight: US Manufacture Share in the World')
@@ -135,7 +137,7 @@ hold on
 title('Perfect Foresight: US Service Employment')
  plot(1:TIME,LdynamicServ(1:TIME))
 saveas(gcf,'figures/PF_US_serv_emp.png')
-
+%}
 
 %% DATA path (linearized)
 %Ldyn, L_hat, v_hat, w_hat, p_hat, P_hat, pi_hat, mu_hat, X_hat, E_T_hat, L_dgp, w_dgp, p_dgp, P_dgp, pi_dgp, mu_dgp, X_dgp, VALjn00);
@@ -152,7 +154,7 @@ plot(1:TIME-1,permute(eqm_nlpf_HAT.Ldyn(1,5,1:TIME-1),[1,3,2]))
 plot(1:TIME-1,permute(Ldyn_dgp(1,5,1:TIME-1),[1,3,2]))
 plot(1:TIME-1,permute(L_belief_dgp(1,5,1:TIME-1,1),[2,3,4,1]),'--')
 plot(5:TIME-1,permute(L_belief_dgp(1,5,5:TIME-1,5),[2,3,4,1]),'--')
-plot(10:TIME-1,permute(L_belief_dgp(1,5,10:TIME-1,10),[2,3,4,1]),'--')
+%plot(10:TIME-1,permute(L_belief_dgp(1,5,10:TIME-1,10),[2,3,4,1]),'--')
 saveas(gcf,'figures/dgp_labor_CAL_sec1.png')
 
 
@@ -193,7 +195,7 @@ plot(4:TIME-1,L_belief_agg_dgp(5,4:TIME-1,4),':')
 plot(10:TIME-1,L_belief_agg_dgp(5,10:TIME-1,10),':')
 legend('Nonlin PF','DATA','Belief','location','best')
 saveas(gcf,'figures/dgp_labor_agg_CAL.png')
-
+%{
 figure
 hold on
 title('DATA: Labor in Texas (sector-aggregated)')
@@ -206,7 +208,7 @@ plot(4:TIME-1,L_belief_agg_dgp(43,4:TIME-1,4),':')
 plot(10:TIME-1,L_belief_agg_dgp(43,10:TIME-1,10),':')
 legend('Nonlin PF','DATA','Belief','location','best')
 saveas(gcf,'figures/dgp_labor_agg_TEX.png')
-
+%}
 %% Recursive method
 %eqm_recur = v2struct(L_pf_lev, L_belief_lev, wf_pf, pf_pf, L_pf, w_pf, p_pf, pi_pf, mu_pf,...
 %     wf_belief, pf_belief, L_belief, w_belief, p_belief, pi_belief, mu_belief);
@@ -234,7 +236,7 @@ plot(10:TIME-1,permute(eqm_recur.L_belief(1,5,10:TIME-1,10),[3,2,4,1]))
 legend('PF (RECOVERED)','Belief (RECOVERED)','location','best')
 saveas(gcf,'figures/recur_labor_sec1_CAL_pct.png')
 
-
+%{
 figure
 hold on
 title('RECURSIVE: pct. dev. Labor in TEXAS (sector 1)')
@@ -251,6 +253,7 @@ plot(10:TIME-1,permute(eqm_recur.L_belief(1,43,10:TIME-1,10),[3,2,4,1]))
 %plot(10:TIME-1,L_belief_agg_dgp(5,10:TIME-1,10),'--')
 legend('PF (RECOVERED)','Belief (RECOVERED)','location','best')
 saveas(gcf,'figures/recur_labor_sec1_TEX_pct.png')
+%}
 
 figure
 hold on
@@ -275,7 +278,7 @@ legend('Nonlin PF','DATA','Belief (RECOVERED)','Belief (DGP)','PF (RECOVERED)','
 saveas(gcf,'figures/recur_labor_agg_CAL.png')
 
 
-
+%{
 figure
 hold on
 title('RECURSIVE: Labor in TEXAS (sector aggregated)')
@@ -297,12 +300,12 @@ plot(10:TIME-1,L_belief_agg_recur(43,10:TIME-1,10),':')
 %plot(10:TIME-1,L_belief_agg_dgp(5,10:TIME-1,10),'--')
 legend('Nonlin PF','DATA','Belief (RECOVERED)','Belief (DGP)','PF (RECOVERED)','location','best')
 saveas(gcf,'figures/recur_labor_agg_TEX.png')
-
+%}
 
 figure
 hold on
 title('RECURSIVE: Labor in California (sector 1)')
-plot(1:TIME-1,permute(eqm_nlpf_HAT.Ldyn(1,5,1:TIME-1,1),[3,2,4,1]))
+plot(1:TIME-1,permute(eqm_nlpf_dd.Ldyn(1,5,1:TIME-1,1),[3,2,4,1]))
 plot(1:TIME-1,permute(Ldyn_dgp(1,5,1:TIME-1),[3,2,1]))
 plot(1:TIME-1,permute(L_belief_recur(1,5,1:TIME-1,1),[3,2,4,1]),':')
 plot(1:TIME-1,permute(L_belief_dgp(1,5,1:TIME-1,1),[3,2,4,1]))
@@ -322,7 +325,7 @@ legend('Nonlin PF','DATA','Belief (RECOVERED)','Belief (DGP)','PF (RECOVERED)','
 saveas(gcf,'figures/recur_labor_sec1_CAL.png')
 
 
-
+%{
 figure
 hold on
 title('RECURSIVE: Labor in California (sector 2)')
@@ -381,5 +384,5 @@ plot(10:TIME-1,permute(L_pf_recur(1,43,10:TIME-1,10),[3,2,4,1]),'--')
 plot(10:TIME-1,permute(L_belief_recur(1,43,10:TIME-1,10),[3,2,4,1]),':')
 legend('Nonlin PF','DATA','Belief (RECOVERED)','Belief (DGP)','PF (RECOVERED)','location','best')
 saveas(gcf,'figures/recur_labor_sec1_TEX.png')
-
+%}
 end

@@ -25,7 +25,7 @@ BETA    = 0.9227; %discount rate (0.99^8: transformed from quarterly to bi-annua
 % Baseline: RHO 0.85 ENDT 20
 SIGMA       = 0.01; % s.d. of catch-up
 W_TRUE      = 0.1; % True weight on RHO when deriving RHO_HAT
-ENDT        = 5; %Last period of learning (PF starts from here)
+ENDT        = 10; %Last period of learning (PF starts from here)
 ENDT_SAMPLE = 1;
 ENDT_DGP    = 1;
 EPST        = ENDT; %Length of epsilon draw
@@ -50,6 +50,7 @@ GAMMA=0.5*ones(J,N);
 
 BETA = 0.5;
 NU = 3*BETA;
+%BETA =0.85;
 
 
 
@@ -60,8 +61,8 @@ NU = 3*BETA;
 ESTM_BOTH   = 1; % if ESTM_BOTH =0, estimate MU only. if =1, estimate both MU and RHO
 UPDT_V      = 0.5; %update speed for value loop (lower value->conservative)
 UPDT_W      = 0.3; %update speed for wage loop (lower value->conservative)
-UPDT_V_NL   = 0.3; %update speed for nonlinear value loop (lower value->conservative)
-UPDT_W_NL   = 0.1; %update speed for nonlinear wage loop (lower value->conservative)
+UPDT_V_NL   = 0.5; %update speed for nonlinear value loop (lower value->conservative)
+UPDT_W_NL   = 0.3; %update speed for nonlinear wage loop (lower value->conservative)
 TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
 TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
 TOLDYN      = 1E-7;  %tolerance rate for linear dynamic equilibrium
@@ -143,7 +144,13 @@ for t=1:TIME-1
 end
 
 
-E_T_hat  = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
+%E_T_hat  = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
+for tt=1:ENDT+1
+    E_T_hat(:,CHINA,:,tt) = -log(T_BASE(:,CHINA,1:TIME)) + log(T(:,CHINA,:));
+end
+%}
+
+%{
 for tt=1:ENDT+1
     for j=1:J
         E_T_hat(j,CHINA,:,tt) = log(T_belief(j,CHINA,:,tt)) - log(T(j,CHINA,:));
