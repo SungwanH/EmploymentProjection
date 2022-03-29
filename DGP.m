@@ -12,7 +12,9 @@ function [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf, approx_nlpf)
 
 %% Roll down parameters
 v2struct(params.envr)
-E_T_hat = params.prod.E_T_hat;      % Belief on productivity (deviation from T)
+v2struct(params.belief)
+
+
 %% Roll down Baseline outcomes
 v2struct(eqm_nlpf)
 v2struct(approx_nlpf)

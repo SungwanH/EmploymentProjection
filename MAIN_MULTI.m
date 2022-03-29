@@ -3,27 +3,48 @@ close all
 clc;
 digits(50)
 
-% Call parameters
-params=PARAMS();
+% Prepare params under different assumption on the true belief updating
+% rule
+params=PARAMS(0.5);
+params_w_01=PARAMS(0.1);
+params_w_09=PARAMS(0.9);
+params_w_re=PARAMS(1); % rational expectation
 v2struct(params.envr);
-%v2struct(params.modl);
-v2struct(params.prod);
 
+%% Inspecting productivity and belief.
+Figure1=figure;
+hold on
+title('Actual and belief productivity in region 1')
+h(1)=plot(1:TIME, permute(params.prod.T(1,CHINA,1:TIME),[2,3,1]),'LineWidth',3);
+h(2)=plot(1:TIME, permute(params.belief.T_belief(1,CHINA,1:TIME,1),[2,3,4,1]),'--','LineWidth',2);
+h(2)=plot(15:TIME, permute(params.belief.T_belief(1,CHINA,15:TIME,15),[2,3,4,1]),'--','LineWidth',2);
+h(2)=plot(30:TIME, permute(params.belief.T_belief(1,CHINA,30:TIME,30),[2,3,4,1]),'--','LineWidth',2);
+h(3)=plot(1:TIME, permute(params_w_re.belief.T_belief(1,CHINA,1:TIME,1),[2,3,4,1]),'.-','LineWidth',1.2);
+h(3)=plot(15:TIME, permute(params_w_re.belief.T_belief(1,CHINA,15:TIME,15),[2,3,4,1]),'.-','LineWidth',1.2);
+h(3)=plot(30:TIME, permute(params_w_re.belief.T_belief(1,CHINA,30:TIME,30),[2,3,4,1]),'.-','LineWidth',1.2);
+h(4)=plot(1:TIME, permute(params_w_01.belief.T_belief(1,CHINA,1:TIME,1),[2,3,4,1]),':','LineWidth',2);
+h(4)=plot(15:TIME, permute(params_w_01.belief.T_belief(1,CHINA,15:TIME,15),[2,3,4,1]),':','LineWidth',2);
+h(4)=plot(30:TIME, permute(params_w_01.belief.T_belief(1,CHINA,30:TIME,30),[2,3,4,1]),':','LineWidth',2);
+h(5)=xline(30);
+legend(h([1,2 ,3,4,5]),{'Actual','Belief (W=0.5)', 'Belief (W=1)','Belief(W=0.1)','Shocks stop'},'location','southeast');
+print(Figure1,'figures/productivity_and_belief.png','-dpng','-r600');
+
+
+
+%% Switchers for this program; loading data
 RUN_NLPF_HAT_SS = 1; 
 RUN_NLPF_HAT    = 1; 
 RUN_NLPF_DD     = 1; 
 RUN_DGP         = 1; 
 RUN_RECUR       = 1;
 
-
 % Load initial data
 data_4_sector=load('DATA/BASE_FOURSECTOR.mat', 'VALjn00', 'Din00','mu0','L0');
 
-
 %%Using fake data
- data_4_sector = FAKE_DATA(params);
+data_4_sector = FAKE_DATA(params);
 
-%% Obtain non-linear level outcome in HAT (Obtain initial Steady State)
+%% Obtain non-linear level outcome in HAT (obtain the path representating initial steady state)
 params_ss=rmfield(params,'prod');
 hat_fundamental_ss.T_HAT=params.prod.T_HAT_SS;
 hat_fundamental_ss.TIME=TIME_SS;
@@ -44,15 +65,11 @@ if RUN_NLPF_HAT_SS ==1
     temporary_struct.T_hat00   = ones(J,N);
     temporary_struct.Din00=data_4_sector.Din00;
     temporary_struct.Din0=temporary_struct.Din00./sum(temporary_struct.Din00,2);
+
     [~, ~, ~, temporary_struct.Din00_matched, temporary_struct.X_matched, temporary_struct.VALjn00_matched] =...
         NLPF_TEMP_HAT(params, temporary_struct.VALjn00, temporary_struct.Din00, temporary_struct.kappa_hat, temporary_struct.T_hat00, temporary_struct.Ljn_hat00, ...
         temporary_struct.w_guess, temporary_struct.p_guess);
      
-    % Scale initial labor allocation it to biannually
-    % for quicker convergence
-    %Change to Annual basis
-    %[temporary_struct.VV,temporary_struct.D] = eig(data_4_sector.mu0(:,:));   
-    %temporary_struct.mu0 = real(temporary_struct.VV * (temporary_struct.D)^8 * inv(temporary_struct.VV));
     temporary_struct.mu0=data_4_sector.mu0(:,:);
     temporary_struct.L00 =data_4_sector.L0(:);
 
@@ -83,13 +100,13 @@ end
 
 %% Obtain non-linear level outcome in HAT
 params_NLPF=rmfield(params,'prod');
-hat_fundamental_NLPF.T_HAT=params.prod.T_HAT_SS;
+hat_fundamental_NLPF.T_HAT=params.prod.T_HAT_SS; 
 hat_fundamental_NLPF.TIME=TIME;
 if RUN_NLPF_HAT ==1
     disp('#################')
     disp('Running NLPF_HAT')
     
-     v_td=ones(R*(J),TIME); %Initial guess for the Ys (exp(Vt+1-V)^1/NU)
+     v_td=ones(R*(J),TIME);  
     load('DATA/NLPF_HAT_SS.mat','eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS')
 
     starting_point_nlpf.VALjn0    = eqm_nlpf_HAT_SS.VALjn00(:,:,TIME_SS); %Labor compensation (w*L)
@@ -110,7 +127,10 @@ if RUN_NLPF_HAT ==1
 else
     load('DATA/NLPF_HAT.mat','eqm_nlpf_HAT','approx_nlpf_HAT'); %loading the equilibrium values in the baseline economy
 end
-%% Obtain non-linear Double (Cross & Time) difference (Counterfactual Objective productivity : NEW CODE)
+
+
+
+%% Obtain non-linear Double (Cross & Time) difference
 % This part derives counterfactual impact of productivity shock
 params_NLPF=rmfield(params,'prod');
 hat_fundamental_cross.T_HAT = ones(J,N,TIME);
@@ -161,12 +181,12 @@ else
 end
 
 %% Obtain non-linear Double (Cross & Time) difference (Counterfactual 'Belief')
-% This part derives counterfactual impact of productivity shock
+% This part derives counterfactual impact of productivity shock according
+% to the belief
 params_NLPF=rmfield(params,'prod');
 hat_fundamental_cross_belief.T_HAT = ones(J,N,TIME);
 for t=1:TIME-1
-%    hat_fundamental_cross.T_HAT(:,:,t+1)=(params.prod.T(:,:,t+1)./params.prod.T(:,:,t))./ones(J,N,1); 
-    hat_fundamental_cross_belief.T_HAT(:,:,t+1)=(params.prod.T_belief(:,:,t+1,1)./params.prod.T_belief(:,:,t,1))./ones(J,N,1); 
+    hat_fundamental_cross_belief.T_HAT(:,:,t+1)=(params.belief.T_belief(:,:,t+1,1)./params.belief.T_belief(:,:,t,1))./ones(J,N,1); 
 end
 hat_fundamental_cross_belief.TIME=TIME;
 
@@ -209,47 +229,23 @@ if RUN_NLPF_DD ==1
 else
     load('DATA/NLPF_DD_BELIEF.mat','eqm_nlpf_dd_belief','approx_nlpf_dd_belief'); %loading the equilibrium values in the counterfactual economy
 end
-%}
+
+
 
 %% Obtain DGP path
 if RUN_DGP ==1
 disp('#################')
 disp('Running DGP')
-%    [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_HAT, approx_nlpf_HAT);
     [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_dd, approx_nlpf_dd);
+    [eqm_dgp_w_01, approx_dgp_w_01] = DGP(params_w_01, eqm_nlpf_dd, approx_nlpf_dd);
+    [eqm_dgp_w_09, approx_dgp_w_09] = DGP(params_w_09, eqm_nlpf_dd, approx_nlpf_dd);        
+    [eqm_dgp_w_re, approx_dgp_w_re] = DGP(params_w_re, eqm_nlpf_dd, approx_nlpf_dd);            
 else
     load('DATA/DGP.mat', 'eqm_dgp','approx_dgp'); 
 end
 
 
-%{
-%% DGP linearize around SS
-load('DATA/NLPF_HAT_SS.mat','eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS'); 
 
-params_lin_around_ss=params;
-params_lin_around_ss.prod.E_T_hat=params.prod.E_T_hat;
-eqm_nlpf_HAT_SS_TIME=eqm_nlpf_HAT_SS;
-approx_nlpf_HAT_SS_TIME=approx_nlpf_HAT_SS;
-
-eqm_nlpf_HAT_SS_TIME.v_td=eqm_nlpf_HAT_SS_TIME.v_td(:,end-TIME+1:end);
-eqm_nlpf_HAT_SS_TIME.Ldyn=eqm_nlpf_HAT_SS_TIME.Ldyn(:,:,end-TIME+1:end);
-eqm_nlpf_HAT_SS_TIME.realwages=eqm_nlpf_HAT_SS_TIME.realwages(:,:,end-TIME+1:end);
-eqm_nlpf_HAT_SS_TIME.wf00=eqm_nlpf_HAT_SS_TIME.wf00(:,:,end-TIME+1:end);
-eqm_nlpf_HAT_SS_TIME.pf00=eqm_nlpf_HAT_SS_TIME.pf00(:,:,end-TIME+1:end);
-eqm_nlpf_HAT_SS_TIME.VALjn00=eqm_nlpf_HAT_SS_TIME.VALjn00(:,:,end-TIME+1:end);
-eqm_nlpf_HAT_SS_TIME.X=eqm_nlpf_HAT_SS_TIME.X(:,:,end-TIME+1:end);
-
-approx_nlpf_HAT_SS_TIME.mu=approx_nlpf_HAT_SS_TIME.mu(:,:,end-TIME+1:end);
-approx_nlpf_HAT_SS_TIME.pi=approx_nlpf_HAT_SS_TIME.pi(:,:,end-TIME+1:end);
-approx_nlpf_HAT_SS_TIME.varrho=approx_nlpf_HAT_SS_TIME.varrho(:,:,end-TIME+1:end);
-approx_nlpf_HAT_SS_TIME.chi=approx_nlpf_HAT_SS_TIME.chi(:,:,end-TIME+1:end);
-approx_nlpf_HAT_SS_TIME.zeta=approx_nlpf_HAT_SS_TIME.zeta(:,:,end-TIME+1:end);
-approx_nlpf_HAT_SS_TIME.lambda=approx_nlpf_HAT_SS_TIME.lambda(:,:,end-TIME+1:end);
-
-
-[eqm_lin_around_ss, approx_lin_around_ss] = DGP(params_lin_around_ss, eqm_nlpf_HAT_SS_TIME, approx_nlpf_HAT_SS_TIME);
-
-%}
 
 %% Obtain Period by period DGP & PF deviation
 if RUN_RECUR ==1
@@ -257,122 +253,17 @@ disp('#################')
 disp('Running RECURSIVE')
     initial_recur.v_hat = eqm_dgp.v_hat;
     initial_recur.w_hat = eqm_dgp.w_hat;
-    [eqm_recur] = RECURSIVE(params, W_TRUE, initial_recur, eqm_dgp, approx_dgp);
+    [eqm_recur_w_01] = RECURSIVE(params, 0.1, initial_recur, eqm_dgp, approx_dgp);
+    [eqm_recur] = RECURSIVE(params, 0.5, initial_recur, eqm_dgp, approx_dgp);
+    [eqm_recur_w_09] = RECURSIVE(params, 0.9, initial_recur, eqm_dgp, approx_dgp);    
+    [eqm_recur_w_re] = RECURSIVE(params, 1, initial_recur, eqm_dgp, approx_dgp);        
 else
-    load('DATA/RECURSIVE.mat', 'eqm_recur'); 
+    load('DATA/RECURSIVE.mat', 'eqm_recur');     
 end
 
 
-%% figures
-Ldynamic = permute(sum(eqm_nlpf_HAT.Ldyn,1),[2,3,1]);
-Ldynamic_sec = permute(eqm_nlpf_HAT.Ldyn(:,CHINA,:),[1,3,2]);
-
-Ldynamic_sec_dd = permute(eqm_nlpf_dd.Ldyn(1,:,:),[1,3,2]);
-Ldynamic_sec_dd_belief = permute(eqm_nlpf_dd_belief.Ldyn(:,CHINA,:),[1,3,2]);
-Ldynamic_dgp = permute(eqm_dgp.Ldyn,[2,3,1]);
-LdynamicManu= reshape(sum(eqm_nlpf_HAT.Ldyn(1,:,:),2),TIME,1);
-LdynamicManu_cross= reshape(sum(eqm_nlpf_dd.Ldyn(1,:,:),2),TIME,1);
-L_belief_dgp = eqm_dgp.L_belief_dgp;
-L_belief_agg_dgp = permute(sum(L_belief_dgp,1),[2,3,4,1]);
-
-Ldyn_dgp = eqm_dgp.Ldyn;
-Lhat_dgp = eqm_dgp.L_hat;
-L_belief_dgp = eqm_dgp.L_belief_dgp;
-
-L_pf_recur = eqm_recur.L_pf_lev;
-L_belief_recur = eqm_recur.L_belief_lev;
-L_pf_agg_recur = permute(sum(L_pf_recur,1),[2,3,4,1]);
-L_belief_agg_recur = permute(sum(L_belief_recur,1),[2,3,4,1]);
-
-figure
-hold on
-title('DATA: Labor in region 1')
-plot(1:TIME,Ldynamic_sec_dd(1,1:TIME))
-plot(1:TIME,Ldynamic_dgp(1,1:TIME),'--')
-plot(2:TIME,L_belief_agg_dgp(1,2:TIME,2),':')
-plot(3:TIME,L_belief_agg_dgp(1,3:TIME,3),':')
-plot(4:TIME,L_belief_agg_dgp(1,4:TIME,4),':')
-%plot(10:TIME,L_belief_agg_dgp(1,10:TIME,10),':')
-legend('Nonlin PF','DATA','Belief','location','best')
-saveas(gcf,'figures/dgp_labor_region1.png')
-
-figure
-hold on
-title('CHINA Employment')
-plot(1:TIME,Ldynamic_sec(1,1:TIME))
-plot(1:TIME,Ldynamic_sec_dd(1,1:TIME),'--')
-plot(1:TIME,Ldynamic_sec_dd_belief(1,1:TIME),'--')
-plot(1:TIME,L_belief_agg_dgp(1,1:TIME,1),':')
-%plot(1:TIME,L_belief_agg_dgp(5,1:TIME,1),':')
-legend('Baseline(Nonlinear TimeDiff)','Nonlinear Cross-Time(Objective T)','Nonlinear Cross-Time(Belief)','Linear Belief','location','best')
-saveas(gcf,'figures/NLPF_All_Region1.png')
-%}
-
-figure
-hold on
-title('RECURSIVE: Labor in region 1')
-plot(1:TIME,Ldynamic_sec_dd(1,1:TIME,1))
-plot(1:TIME,Ldynamic_dgp(1,1:TIME))
-plot(2:TIME,L_belief_agg_recur(1,2:TIME,1),':')
-plot(2:TIME,L_belief_agg_dgp(1,2:TIME,1))
-plot(2:TIME,L_pf_agg_recur(1,2:TIME,1),'--')
-%plot(10:TIME,L_belief_agg_recur(1,10:TIME,10),':')
-%plot(10:TIME,L_belief_agg_dgp(1,10:TIME,10))
-%plot(10:TIME,L_pf_agg_recur(1,10:TIME,10),'--')
-legend('Nonlin PF','DATA','Belief (RECOVERED)','Belief (DGP)','PF (RECOVERED)','location','best')
-figure
-hold on
-title('RECURSIVE: Labor in region 5')
-plot(1:TIME,Ldynamic_sec_dd(1,1:TIME,5))
-plot(1:TIME,Ldynamic_dgp(5,1:TIME))
-plot(1:TIME,L_belief_agg_recur(5,1:TIME,1),':')
-plot(1:TIME,L_belief_agg_dgp(5,1:TIME,1))
-plot(1:TIME,L_pf_agg_recur(5,1:TIME,1),'--')
-legend('Nonlin PF','DATA','Belief (RECOVERED)','Belief (DGP)','PF (RECOVERED)','location','best')
-
-%FIGURES(params, eqm_nlpf_HAT_SS, eqm_nlpf_HAT, eqm_nlpf_dd, eqm_nlpf_dd_belief, eqm_dgp, eqm_recur)
-
-%{
-logdiff = -(log(Ldynamic_sec(1,:)) - log(Ldynamic_sec_dd)); 
-logdiff_new = -(log(Ldynamic_sec(1,:)) - log(Ldynamic_sec_cross_new)); 
-logdiff_belief = -(log(Ldynamic_sec(1,:)) - log(L_belief_agg_dgp(:,:,2))); 
-
-figure
-hold on
-title('change in log percentage CHINA Employment - NLPF and Linear Approx')
-%plot(1:TIME,Ldynamic_sec(1,1:TIME))
-plot(1:TIME,logdiff(1,1:TIME))
-plot(1:TIME,logdiff_new(1,1:TIME),'--')
-plot(1:TIME,logdiff_belief(1,1:TIME),':')
-%plot(1:TIME,L_belief_agg_dgp(5,1:TIME,1),':')
-legend('Nonlinear Time-Cross(Objective T)','Nonlinear Time-Cross(New code)','Linear Approximation','location','best')
-saveas(gcf,'figures/Comparison_Approx_logdiff.png')
-saveas(gcf,'figures/Comparison_Approx_logdiff.fig')
-
-figure
-hold on
-title('CHINA Employment - NLPF and Linear Approx')
-%plot(1:TIME,Ldynamic_sec(1,1:TIME))
-plot(1:TIME,Ldynamic_sec_dd(1,1:TIME))
-plot(1:TIME,Ldynamic_sec_cross_new(1,1:TIME),'--')
-plot(1:TIME,L_belief_agg_dgp(1,1:TIME,1),'--')
-%plot(1:TIME,L_belief_agg_dgp(5,1:TIME,1),':')
-legend('Nonlinear Time-Cross(Objective T)','Nonlinear Time-Cross(New code)','Linear Approximation','location','best')
-saveas(gcf,'figures/Comparison_Approx_Sym.png')
-saveas(gcf,'figures/Comparison_Approx_Sym.fig')
+%% Make figures
+FIGURES_SCRIPT
 
 
-figure
-hold on
-title('CHINA Employment -No Surprise Adj')
-%plot(1:TIME,Ldynamic_sec(1,1:TIME))
-plot(1:TIME,Ldynamic_sec_td(1,1:TIME))
-plot(1:TIME,Ldynamic_sec_dd(1,1:TIME))
-plot(1:TIME,Ldynamic_sec_cross_new(1,1:TIME),'--')
-%plot(1:TIME,L_belief_agg_dgp(1,1:TIME,2),'--')
-%plot(1:TIME,L_belief_agg_dgp(5,1:TIME,1),':')
-legend('Nonlinear TimeDiff','Nonlinear Time-Cross(Base Code)','Nonlinear Time-Cross(New code)','location','best')
-saveas(gcf,'figures/Comparison_No_Surprise.png')
-saveas(gcf,'figures/Comparison_No_Surprise.fig')
-
-%}
+%% To do the saving function is not done yet.

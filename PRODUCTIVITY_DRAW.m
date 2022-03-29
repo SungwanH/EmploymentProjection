@@ -12,12 +12,9 @@ v2struct(params.envr);
 v2struct(params.modl);
 v2struct(params.prod);
 
-rng(123457)
+rng(2022)
 %productivity gap draw
 EPS = zeros(J,TIME);
-
-for t=1:EPST
-    EPS(:,t) = normrnd(0,SIGMA,[J,1]);
-end
+EPS(:,1:EPST)= normrnd(0,SIGMA,[J,EPST]);
 
 end

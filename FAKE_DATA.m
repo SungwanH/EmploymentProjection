@@ -15,7 +15,7 @@ end
 
 L0=0.1*ones(J,R);
 
-damp = 0.05 / (N*J-1);
+damp = 0.1 / (N*J-1);
 mu0 = damp*ones(N*J,N*J);
 mu0(eye(N*J,'logical')) = 1 - damp*(N*J-1);
 
