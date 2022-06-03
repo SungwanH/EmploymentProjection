@@ -42,14 +42,14 @@ GAMMA=rand(J,N);
 
 %% Shocks
 %T_hat = zeros(J,N,TIME);
-T_hat = rand(J,N,TIME);
+T_hat = rand(J,N,TIME)*0.1;
 %T_hat(1,1,1:TIME) = 0.1;
 %T_hat = E_T_hat(1:J,1:N,2,1);
 %L_hat = ones(N*J,TIME) *0.1;
-L_hat = rand(J,N,TIME);
-kappa_hat = rand(N*J,N,TIME);
+L_hat = rand(J,N,TIME)*0.1;
+kappa_hat = rand(N*J,N,TIME)*0.1;
 %kappa_hat = zeros(N*J,N,TIME);
-w_hat_test = rand(J,N,TIME); %For test
+w_hat_test = rand(J,N,TIME)*0.1; %For test
 
 
 BTHETA = zeros(N*J,N*J,TIME);
@@ -179,7 +179,23 @@ for t = 1:TIME
     X_hat(:,:,t) = X_temp;        
 end
 
-
+for t = 1:TIME
+    RHS_temp=NaN(J,N,N);
+    
+    chi_aux = chi(:,:,t);
+    X_temp = X_hat(:,:,t);
+    L_temp = L_hat(:,:,t);
+    pi_temp = pi_hat(:,:,t);
+    for ii=1:N
+        for j=1:J
+            for n=1:N
+                RHS_temp_old(j,ii,n) = chi_aux(n+(j-1)*N, ii) * (pi_temp(n+(j-1)*N, ii) + X_temp(j,n));
+            end
+        end
+    end
+end
+w_update_old(:,:,t)= GAMMA.*sum(RHS_temp_old,3) -L_temp
+w_update_old - w_update_old(1,1,1)
 %% 
 %C = -THETA^j Gamma^ij
 C= zeros(N,J);
@@ -429,28 +445,28 @@ for t=1:TIME
 end
 T= sum(T_temp,4);
 
-P1_temp = zeros(N*J,N*J,TIME,N);
+Q1_temp = zeros(N*J,N*J,TIME,N);
 F1 = zeros(N*J, N*N*J,TIME);
 for t=1:TIME
     for i=1:N
         for j=1:J
             for n=1:N
-                P1_temp(i+(j-1)*N,i+(j-1)*N,t,n) = GAMMA(j,i)*chi(n+(j-1)*N,i,t);
+                Q1_temp(i+(j-1)*N,i+(j-1)*N,t,n) = GAMMA(j,i)*chi(n+(j-1)*N,i,t);
                 F1(i+(j-1)*N,n+(i-1)*N+(j-1)*N*N,t)  = -THETA(j)*GAMMA(j,i)*chi(n+(j-1)*N,i,t);
             end
         end
     end
 end
-P1= sum(P1_temp,4);
+Q1= sum(Q1_temp,4);
 
-P2_temp = zeros(N*J,N*J,TIME,N);
+Q2_temp = zeros(N*J,N*J,TIME,N);
 F2_temp = zeros(N*J,N*N*J,TIME,N);
 for t=1:TIME
     for i=1:N
         for j=1:J
             for n=1:N
                 for m=1:N
-                    P2_temp(i+(j-1)*N,m+(j-1)*N,t,n) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*E(n,j,i,m,t);
+                    Q2_temp(i+(j-1)*N,m+(j-1)*N,t,n) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*E(n,j,i,m,t);
                     for h=1:N
                         F2_temp(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t,n) = -GAMMA(j,i)*chi(n+(j-1)*N,i,t)*F(n,j,i,m,h,t);
                     end
@@ -459,13 +475,13 @@ for t=1:TIME
         end
     end
 end
-P2= sum(P2_temp,4);
+Q2= sum(Q2_temp,4);
 F2= sum(F2_temp,4);
 
 
-P3_temp = zeros(N*J,N*J,TIME,N,N);
+Q3_temp = zeros(N*J,N*J,TIME,N,N);
 F3_temp = zeros(N*J,N*N*J,TIME,N);
-P4_temp = zeros(N*J,N*J,TIME,N,N,N);
+Q4_temp = zeros(N*J,N*J,TIME,N,N,N);
 F4_temp = zeros(N*J,N*J,TIME,N,N,N);
 for t=1:TIME
     for i=1:N
@@ -473,10 +489,10 @@ for t=1:TIME
             for n=1:N
                 for o=1:N
                     for l=1:N
-                        P3_temp(i+(j-1)*N,o+(j-1)*N,t,n,l) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t);
+                        Q3_temp(i+(j-1)*N,o+(j-1)*N,t,n,l) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t);
                         F3_temp(i+(j-1)*N,l+(o-1)*N+(j-1)*N*N,t,n) = -THETA(j)*GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t);
                         for m=1:N
-                            P4_temp(i+(j-1)*N,m+(j-1)*N,t,n,o,l) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*E(l,j,o,m,t);
+                            Q4_temp(i+(j-1)*N,m+(j-1)*N,t,n,o,l) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*E(l,j,o,m,t);
                             for h=1:N
                                 F4_temp(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t,n,o,l) = -GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*F(l,j,o,m,h);
                             end
@@ -487,14 +503,14 @@ for t=1:TIME
         end
     end
 end
-P3= sum(sum(P3_temp,4),5);
+Q3= sum(sum(Q3_temp,4),5);
 F3= sum(F3_temp,4);
-P4= sum(sum(sum(P4_temp,4),5),6);
+Q4= sum(sum(sum(Q4_temp,4),5),6);
 F4= sum(sum(sum(F4_temp,4),5),6);
 
 % Final equation:
 M_tilde = M1+M2+M3;
-P_tilde = P1+P2+P3+P4;
+Q_tilde = Q1+Q2+Q3+Q4;
 F_tilde = F1+F2+F3+F4;
 % Reformulate the order of shocks
 for t=1:TIME
@@ -509,8 +525,7 @@ for t=1:TIME
     end
 end
 for t=1:TIME
-%    w_hat_nj(:,t) = (eye(N*J) - M(:,:,t) - Q(:,:,t)- R(:,:,t) - T(:,:,t) ) \ ( (T-eye(N*J))*L_hat(:,t) + E_STAR(:,t));
-    w_hat_nj(:,t) = (eye(N*J) - M_tilde(:,:,t) - T(:,:,t) ) \ ((T-eye(N*J)) * L_hat_T(:,t) + P_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
+    w_hat_nj(:,t) = (eye(N*J) - M_tilde(:,:,t) - T(:,:,t) ) \ ((T-eye(N*J)) * L_hat_T(:,t) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
 end
 w_hat_nj
 
@@ -538,10 +553,9 @@ for t=1:TIME
     end
 end
 for t=1:TIME
-    RHS_new(:,t) = M_tilde(:,:,t) * w_hat_test_T(:,t) + T(:,:,t) * (w_hat_test_T(:,t) + L_hat_T(:,t)) + P_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t);
+    RHS_new(:,t) = M_tilde(:,:,t) * w_hat_test_T(:,t) + T(:,:,t) * (w_hat_test_T(:,t) + L_hat_T(:,t)) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t);
 end
 RHS_new
-
 
 %% Find w_hat_iter from iterative method (old code)
 ITER_TEMP = 1;
@@ -553,18 +567,13 @@ w_update   = zeros(J,N,TIME);
 p_hat      = zeros(J,N,TIME);
 pi_hat     = zeros(N*J,N,TIME);
 X_hat      = zeros(J,N,TIME);
-UPDT_W     = 0.1; %update speed for wage loop (lower value->conservative)
-TOLTEMP    = 1E-8;  % tolerance rate for linear temporary equilibrium
+UPDT_W     = 0.01; %update speed for wage loop (lower value->conservative)
+TOLTEMP    = 1E-15;  % tolerance rate for linear temporary equilibrium
 MAXIT      = 1E+8; %maximum number of iterations
 while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
 
     for t = 1:TIME
         % Step 4b. solve for p_hat
-        % for given j, 
-        % A*p_hat = RHS
-        % the first two rows of A are:
-        % ( 1-(1-B_1j)pi_1j1   -(1-B_2j)pi_1j2    -(1-B_3j)pi_1j3 ...)
-        % ( -(1-B_1j)pi_2j1   1-(1-B_2j)pi_2j2    -(1-B_3j)pi_2j3 ...)
         RHS = zeros(J,N);
     
         pi_aux =  pi(:,:,t); %Note that pi and kappa are organized by sector; i.e., two consecutive rows are same sectors in different countries
@@ -598,8 +607,7 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
     for t = 1:TIME
         for n=1:N
             for j=1:J
-%               pi_hat(n+(j-1)*N,ii,t) = -THETA(j)*(B(j,ii) * w_hat_iter(j,ii,t) - (1-B(j,ii)*p_hat(j,ii,t)) + TAU(n+(j-1)*N,ii)) + T_hat(j,ii,t);
-                pi_hat(n+(j-1)*N,:,t) = -THETA(j)*(GAMMA(j,:) .* w_hat_iter(j,:,t) + (1-GAMMA(j,:)).*p_hat(j,:,t) - p_hat(j,n,t) - kappa_hat(n+(j-1)*N,:,t)) + T_hat(j,:,t);
+                pi_hat(n+(j-1)*N,:,t) = -THETA(j)*(GAMMA(j,:) .* w_hat_iter(j,:,t) + (1-GAMMA(j,:)).*p_hat(j,:,t) - p_hat(j,n,t) + kappa_hat(n+(j-1)*N,:,t)) + T_hat(j,:,t);
              end
          end
     end        
@@ -662,11 +670,10 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
 
     for t=1:TIME
         checkw(t,1)=max(max(abs(w_hat_iter(:,:,t)-w_update(:,:,t))));
-%    checkw(t,1) = norm((w_update(:,t) - w_hat_iter(:,t))./w_update(:,t),1);
     end
     [wmax loc]=max(checkw);
     wmax;
-    if ITER_TEMP >3000 || sum(isnan(w_update(:)))>0
+    if ITER_TEMP >10000 || sum(isnan(w_update(:)))>0
         checkw(1:TIME)
         1
         disp('Inner loop err')
@@ -675,8 +682,46 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
     end
     
     % Step 4e. update the guess
-    w_hat_iter = (1-UPDT_W)*w_hat_iter+UPDT_W*w_update;
-    ITER_TEMP=ITER_TEMP+1;
+    w_hat_iter = (1-UPDT_W) * w_hat_iter + UPDT_W * w_update;
+    ITER_TEMP = ITER_TEMP + 1;
 end
-w_hat_nj - w_hat_nj(1,1)
-w_hat_iter
+
+for t=1:TIME
+    for i=1:N
+        for j=1:J
+            w_hat_iter_old(i+(j-1)*N,t) = w_hat_iter(j,i,t);
+        end
+    end
+end
+
+%Comparison 
+w_hat_nj - w_hat_nj(1,1) % wage from new code using inversion
+w_hat_iter_old  % wage from old code using iteration
+
+%% Iteration with new code
+w_hat_iter_new = zeros(N*J,TIME);
+w_update_new = zeros(N*J,TIME);
+ITER_TEMP_NEW = 0;
+wmax_new=1;
+while (ITER_TEMP_NEW <= MAXIT) && (wmax_new > TOLTEMP)
+for t=1:TIME
+    w_update_new(:,t) = M_tilde(:,:,t) * w_hat_iter_new(:,t) + T(:,:,t) * (w_hat_iter_new(:,t) + L_hat_T(:,t)) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t) - L_hat_T;
+    w_update_new(:,:,t)=w_update_new(:,:,t)-w_update_new(1,1,t); %normalize the first wage to be a constant across periods; should not change anything
+end
+
+    for t=1:TIME
+        checkw(t,1)=max(abs(w_hat_iter_new(:,t)-w_update_new(:,t)));
+    end
+    [wmax_new loc]=max(checkw);
+    wmax_new;
+    if ITER_TEMP_NEW >10000 || sum(isnan(w_update_new(:)))>0
+      checkw(1:TIME)
+      1 
+      disp('Inner loop err')
+      ITER_TEMP_NEW
+      stop
+    end
+w_hat_iter_new = (1-UPDT_W) * w_hat_iter_new + UPDT_W * w_update_new;
+ITER_TEMP_NEW = ITER_TEMP_NEW+1;
+end
+w_hat_iter_new % wage from new code using iteration
