@@ -538,7 +538,7 @@ for t=1:TIME
     end
 end
 for t=1:TIME
-    RHS_new(:,t) = M_tilde(:,:,t) * w_hat_test_T(:,t) + T(:,:,t) * (w_hat_test_T(:,t) + L_hat_T(:,t)) + P_tilde(:,:,t) * T_hat_T(:,:,t) + F_tilde(:,:,t) * kappa_hat_T(:,:,t);
+    RHS_new(:,t) = M_tilde(:,:,t) * w_hat_test_T(:,t) + T(:,:,t) * (w_hat_test_T(:,t) + L_hat_T(:,t)) + P_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t);
 end
 RHS_new
 
