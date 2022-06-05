@@ -1,4 +1,4 @@
-function [eqm] = PBP_DYN(params, t1, t2, E_T_hat, kappa_hat, L, V, W, approx)
+function [eqm] = PBP_DYN(params, t1, t2, E_T_hat, kappa_hat, L, V, W, approx, mat_pbp)
 % Period by period equilibrium
 % At every period t1, the perceived path of the shock in fundamental
 % (E_T_hat) is updated
@@ -52,10 +52,12 @@ while (ITER_DYN <= MAXIT) && (VMAX > TOLDYN)
             L_hat(i,t+1) = lambda_aux(:,i)'*mu_hat(:,i,t) + lambda_aux(:,i)' * L_hat(:,t);
         end
     end
-
+    
     % Step 4. Inner loop (Temporary problem: solves w, P, pi)
-    [w_hat, p_hat, P_hat, pi_hat, X_hat] = PBP_TEMP(params, t1, T_hat, kappa_hat, W, L_hat, approx);
-    W= w_hat; % will be used as next period's initial value
+%    [w_hat, p_hat, P_hat, pi_hat, X_hat] = PBP_TEMP(params, t1, T_hat, kappa_hat, W, L_hat, approx); %iterative method
+%    W= w_hat; % will be used as next period's initial value
+    [w_hat, p_hat, P_hat, pi_hat, X_hat] = PBP_TEMP_MAT(params, t1, T_hat, kappa_hat, L_hat, approx, mat_pbp); % matrix inversion
+   
     for t=t1:TIME
         rw_hat(:,:,t) = w_hat(:,:,t) - ones(J,1)*P_hat(1,:,t); %real wage
     end

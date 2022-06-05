@@ -3,18 +3,29 @@
 clear 
 close all
 clc;
+load('DATA/DGP.mat', 'eqm_dgp','approx_dgp');
+load('DATA/NLPF_DD.mat', 'eqm_nlpf_dd','approx_nlpf_dd');
+%eqm_nlpf_dd, approx_nlpf_dd)
 %data_4_sector=load('DATA/BASE_FOURSECTOR.mat', 'VALjn00', 'Din00','mu0','L0');
 %{
 load('DATA_onesector/DGP.mat', 'eqm_dgp','approx_dgp');
 %% Load parameter values and approximation points
 N=10;
 J=1;
-E_T_hat = eqm_dgp.E_T_hat;
+%}
+%T_hat = eqm_dd.E_T_hat;
+pi=approx_nlpf_dd.pi;
+chi=approx_nlpf_dd.chi;
+zeta=approx_nlpf_dd.zeta;
+varrho=approx_nlpf_dd.varrho;
+%{
+T_hat = eqm_dgp.E_T_hat;
 pi=approx_dgp.pi;
 chi=approx_dgp.chi;
 zeta=approx_dgp.zeta;
 varrho=approx_dgp.varrho;
-params=PARAMS(0.5);
+%}
+params=PARAMS_TEST(0.5);
 v2struct(params.envr);
 THETA  = params.modl.THETA;
 GAMMA  = params.modl.GAMMA;
@@ -25,6 +36,7 @@ rng(20220602)
 TIME=1;
 N=5;
 J=2;
+%{
 pi = rand(N*J,N,TIME);
 varrho = rand(N*J,N,TIME);
 chi = rand(N*J,N,TIME);
@@ -39,16 +51,17 @@ ALPHAS=1/J*ones(J,N);
 THETA=4*ones(J,1);
 %GAMMA=0.5*ones(J,N);
 GAMMA=rand(J,N);
-
+%}
+%pi = rand(N*J,N,TIME);
 %% Shocks
 %T_hat = zeros(J,N,TIME);
 T_hat = rand(J,N,TIME)*0.1;
 %T_hat(1,1,1:TIME) = 0.1;
 %T_hat = E_T_hat(1:J,1:N,2,1);
-%L_hat = ones(N*J,TIME) *0.1;
 L_hat = rand(J,N,TIME)*0.1;
-kappa_hat = rand(N*J,N,TIME)*0.1;
+%L_hat = zeros(J,N,TIME);
 %kappa_hat = zeros(N*J,N,TIME);
+kappa_hat = rand(N*J,N,TIME)*0.1;
 w_hat_test = rand(J,N,TIME)*0.1; %For test
 
 
@@ -137,7 +150,6 @@ for t = 1:TIME
          end
      end
 end        
-
 p_hat_nj % p from the new code
 p_hat % p from the old code
 
@@ -194,8 +206,7 @@ for t = 1:TIME
         end
     end
 end
-w_update_old(:,:,t)= GAMMA.*sum(RHS_temp_old,3) -L_temp
-w_update_old - w_update_old(1,1,1)
+
 %% 
 %C = -THETA^j Gamma^ij
 C= zeros(N,J);
@@ -277,10 +288,12 @@ pi_hat %pi from the old code
 
 %% Parts in X (expenditure)
 U = zeros(N*J,N*J,TIME);
-for i=1:N
-    for j=1:J
-        for o=1:N
-            U(i+(j-1)*N,o+(j-1)*N,t) = (1-GAMMA(j,i))*varrho(o+(j-1)*N,i,t); 
+for t=1:TIME
+    for i=1:N
+        for j=1:J
+            for o=1:N
+                U(i+(j-1)*N,o+(j-1)*N,t) = (1-GAMMA(j,i))*varrho(o+(j-1)*N,i,t); 
+            end
         end
     end
 end
@@ -301,7 +314,7 @@ for t=1:TIME
         end
     end
 end
-%H(ijok) = BGAMMA(ijo)(ALPHA(oj)xi(okj))
+%H(ijok) = BGAMMA(ijo)(ALPHA(oj)chi(okj))
 H = zeros(N,J,N,J,TIME);
 for t=1:TIME
     for i=1:N
@@ -328,7 +341,7 @@ for t=1:TIME
                         end
                         temptemp = temptemp + G(i,j,o,l,t)*(D(l,j,o,m,t)*w_hat_test(j,m,t) + E(l,j,o,m,t) *T_hat(j,m,t)) + temptt;
                     end
-                    Gsum_temp(j,i,o,l,t) = G(i,j,o,l,t)*(C(o,j,t)*w_hat_test(j,o,t) + T_hat(j,o,t) - THETA(j)*kappa_hat(l+(j-1)*N,o,t)) + temptemp;
+                    Gsum_temp(j,i,o,l,t) = G(i,j,o,l,t)*(C(o,j)*w_hat_test(j,o,t) + T_hat(j,o,t) - THETA(j)*kappa_hat(l+(j-1)*N,o,t)) + temptemp;
                 end
             end
         end
@@ -354,7 +367,21 @@ X_hat_ij = Gsum + Hsum;
 X_hat_ij %New code
 X_hat    %old code
 
-
+for t=1:TIME
+    for i=1:N
+        for j=1:J
+            for o=1:N
+                for l=1:N
+                    X_temp_G(j,i,o,l,t)=G(i,j,o,l,t)*pi_nj(l+(j-1)*N,o,t);
+                end
+                for k=1:J
+                    X_temp_H(j,i,o,k,t)=H(i,j,o,k,t)*(w_hat_test(k,o,t)+L_hat(k,o,t));
+                end
+             end
+         end
+     end
+end        
+X_hat_test = sum(sum(X_temp_G,3),4) + sum(sum(X_temp_H,3),4)
 %% Recovering labor market clearing condition
 
 %Q(ijij) = GAMMA(ij)sum_n chi(nji) C(ij) sum_o sum_l G(njol)C(oj)
@@ -363,7 +390,7 @@ for t=1:TIME
     for i=1:N
         for j=1:J
             for n=1:N
-                M1_temp(i+(j-1)*N,i+(j-1)*N,t,n) = GAMMA(j,i)*chi(n+(j-1)*N,i,t) * C(i,j,t);
+                M1_temp(i+(j-1)*N,i+(j-1)*N,t,n) = GAMMA(j,i)*chi(n+(j-1)*N,i,t) * C(i,j);
             end
         end
     end
@@ -407,7 +434,7 @@ for t=1:TIME
         for j=1:J
             for o=1:N
                 for l=1:N
-                    GC_temp(n,j,o,t,l) = G(n,j,o,l,t)*C(o,j,t);
+                    GC_temp(n,j,o,t,l) = G(n,j,o,l,t)*C(o,j);
                 end
             end
         end
@@ -706,7 +733,7 @@ wmax_new=1;
 while (ITER_TEMP_NEW <= MAXIT) && (wmax_new > TOLTEMP)
 for t=1:TIME
     w_update_new(:,t) = M_tilde(:,:,t) * w_hat_iter_new(:,t) + T(:,:,t) * (w_hat_iter_new(:,t) + L_hat_T(:,t)) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t) - L_hat_T;
-    w_update_new(:,:,t)=w_update_new(:,:,t)-w_update_new(1,1,t); %normalize the first wage to be a constant across periods; should not change anything
+    w_update_new(:,t)=w_update_new(:,t)-w_update_new(1,t); %normalize the first wage to be a constant across periods; should not change anything
 end
 
     for t=1:TIME

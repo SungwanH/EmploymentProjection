@@ -19,6 +19,11 @@ v2struct(params.belief)
 v2struct(eqm_nlpf)
 v2struct(approx_nlpf)
 
+% Generate matrices for temporary equilibrium
+tic
+mat_pbp = MAT(params, approx_nlpf);
+toc
+%mat_pbp =ones(N,J,TIME);
 % period by period equilibrium
 % Initialize
 v_hat     = zeros(R*J,TIME); 
@@ -37,7 +42,7 @@ for t1=1:ENDT+1
          V = zeros(R*J,TIME); %initial value for v_hat
          W = zeros(J,N,TIME);
     end
-    [eqm_temp] = PBP_DYN(params, t1, t1, E_T_hat, kappa_hat, L, V, W, approx_nlpf);
+    [eqm_temp] = PBP_DYN(params, t1, t1, E_T_hat, kappa_hat, L, V, W, approx_nlpf,mat_pbp);
                       
     L = eqm_temp.L(:,t1+1); % update the initial value of labor 
     V = eqm_temp.v; % update the initial value of V

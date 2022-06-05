@@ -81,7 +81,7 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
         for n=1:N
             for j=1:J
 %               pi_hat(n+(j-1)*N,ii,t) = -THETA(j)*(B(j,ii) * w_hat(j,ii,t) - (1-B(j,ii)*p_hat(j,ii,t)) + TAU(n+(j-1)*N,ii)) + T_hat(j,ii,t);
-                pi_hat(n+(j-1)*N,:,t) = -THETA(j)*(GAMMA(j,:) .* w_hat(j,:,t) + (1-GAMMA(j,:)).*p_hat(j,:,t) - p_hat(j,n,t) - kappa_hat(n+(j-1)*N,:,t)) + T_hat(j,:,t);
+                pi_hat(n+(j-1)*N,:,t) = -THETA(j)*(GAMMA(j,:) .* w_hat(j,:,t) + (1-GAMMA(j,:)).*p_hat(j,:,t) - p_hat(j,n,t) + kappa_hat(n+(j-1)*N,:,t)) + T_hat(j,:,t);
              end
          end
     end        
@@ -160,4 +160,12 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
     w_hat = (1-UPDT_W)*w_hat+UPDT_W*w_update;
     ITER_TEMP=ITER_TEMP+1;
 end
+%{
+w_hat(:,:,1,1)
+p_hat(:,:,1,1)
+P_hat(:,:,1,1)
+pi_hat(:,:,1,1)
+X_hat(:,:,1,1)
+stop
+%}
 end
