@@ -18,7 +18,7 @@ pi=approx_nlpf_dd.pi;
 chi=approx_nlpf_dd.chi;
 zeta=approx_nlpf_dd.zeta;
 varrho=approx_nlpf_dd.varrho;
-%{
+
 T_hat = eqm_dgp.E_T_hat;
 pi=approx_dgp.pi;
 chi=approx_dgp.chi;
@@ -32,8 +32,8 @@ GAMMA  = params.modl.GAMMA;
 ALPHAS = params.modl.ALPHAS;
 clear approx_dgp VALjn00 Din00 mu0 L0
 %}
-rng(20220602)
-TIME=1;
+rng(20220605)
+TIME=2;
 N=5;
 J=2;
 %{
@@ -247,7 +247,7 @@ E = sum(E_temp,5);
 %D_nj = sum(D_temp_nj,4);
 %E_ij = sum(E_temp_ij,4);
 %E_nj = sum(E_temp_nj,4);
-%F = E_temp;
+%F = E_temp
 
 %% Test (new code) Pi
 %T_hat_temp =zeros(J,N,TIME);
@@ -364,7 +364,7 @@ Hsum = sum(sum(Hsum_temp,4),3);
 
 X_hat_ij = Gsum + Hsum;
 
-X_hat_ij %New code
+%X_hat_ij %New code
 X_hat    %old code
 
 for t=1:TIME
@@ -521,7 +521,7 @@ for t=1:TIME
                         for m=1:N
                             Q4_temp(i+(j-1)*N,m+(j-1)*N,t,n,o,l) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*E(l,j,o,m,t);
                             for h=1:N
-                                F4_temp(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t,n,o,l) = -GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*F(l,j,o,m,h);
+                                F4_temp(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t,n,o,l) = -GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*F(l,j,o,m,h,t);
                             end
                         end
                     end
@@ -552,24 +552,32 @@ for t=1:TIME
     end
 end
 for t=1:TIME
-    w_hat_nj(:,t) = (eye(N*J) - M_tilde(:,:,t) - T(:,:,t) ) \ ((T-eye(N*J)) * L_hat_T(:,t) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
+    M_tilde_temp = M_tilde(:,:,t);
+    T_tilde_temp = T(:,:,t);
+    Q_tilde_temp = Q_tilde(:,:,t);
+    F_tilde_temp = F_tilde(:,:,t);
+    L_hat_T_temp = L_hat_T(:,t);
+    T_hat_T_temp = T_hat_T(:,t);
+    kappa_hat_T_temp = kappa_hat_T(:,t);
+    w_hat_nj(:,t) = (eye(N*J) - M_tilde_temp - T_tilde_temp ) \ ((T_tilde_temp-eye(N*J)) * L_hat_T_temp + Q_tilde_temp * T_hat_T_temp + F_tilde_temp * kappa_hat_T_temp);
+%        w_hat_nj(:,t) = (eye(N*J) - M_tilde(:,:,t) - T(:,:,t) ) \ ((T(:,:,t)-eye(N*J)) * L_hat_T(:,t) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
 end
 w_hat_nj
-
 %% check: compare RHS of Labor mkt clearing condition from old vs new code
 % old code; pi_hat and X_hat is coming from the old code
 for t=1:TIME
     for i=1:N
         for n=1:N
              for j=1:J
-                RHS_temp(i+(j-1)*N,t,n) = GAMMA(j,i) * chi(n+(j-1)*N,i,t) * (pi_hat(n+(j-1)*N,i,t)+X_hat(j,n)); 
+                RHS_old_temp(i+(j-1)*N,t,n) = GAMMA(j,i) * chi(n+(j-1)*N,i,t) * (pi_hat(n+(j-1)*N,i,t)+X_hat(j,n,t)); 
             end
         end
     end
 end
-for t=1:TIME
-    RHS_old(:,t) = sum(RHS_temp(:,t,:),3);
-end
+%for t=1:TIME
+%    RHS_old(:,t) = sum(RHS_temp(:,t,:),3);
+%end
+RHS_old = sum(RHS_old_temp,3);
 RHS_old
 % new code
 for t=1:TIME
@@ -594,7 +602,7 @@ w_update   = zeros(J,N,TIME);
 p_hat      = zeros(J,N,TIME);
 pi_hat     = zeros(N*J,N,TIME);
 X_hat      = zeros(J,N,TIME);
-UPDT_W     = 0.01; %update speed for wage loop (lower value->conservative)
+UPDT_W     = 0.1; %update speed for wage loop (lower value->conservative)
 TOLTEMP    = 1E-15;  % tolerance rate for linear temporary equilibrium
 MAXIT      = 1E+8; %maximum number of iterations
 while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
@@ -722,7 +730,8 @@ for t=1:TIME
 end
 
 %Comparison 
-w_hat_nj - w_hat_nj(1,1) % wage from new code using inversion
+w_hat_nj(:,1) - w_hat_nj(1,1) % wage from new code using inversion
+%w_hat_nj(:,2) - w_hat_nj(1,2)
 w_hat_iter_old  % wage from old code using iteration
 
 %% Iteration with new code
@@ -732,7 +741,7 @@ ITER_TEMP_NEW = 0;
 wmax_new=1;
 while (ITER_TEMP_NEW <= MAXIT) && (wmax_new > TOLTEMP)
 for t=1:TIME
-    w_update_new(:,t) = M_tilde(:,:,t) * w_hat_iter_new(:,t) + T(:,:,t) * (w_hat_iter_new(:,t) + L_hat_T(:,t)) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t) - L_hat_T;
+    w_update_new(:,t) = M_tilde(:,:,t) * w_hat_iter_new(:,t) + T(:,:,t) * (w_hat_iter_new(:,t) + L_hat_T(:,t)) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t) - L_hat_T(:,t);
     w_update_new(:,t)=w_update_new(:,t)-w_update_new(1,t); %normalize the first wage to be a constant across periods; should not change anything
 end
 

@@ -22,13 +22,8 @@ pi      =   approx.pi;
 
 %% Roll down matrices
 v2struct(mat_pbp);
-%{
-DELTA = mat_pbp.DELTA;
-M_tilde = mat_pbp.M_tilde;
-Q_tilde = mat_pbp.Q_tilde;
-T = mat_pbp.T;
-F_tilde = mat_pbp.F_tilde;
-%}
+%
+
 % Reformulate the order of shocks
 % L_hat_R only includes US states and the order is j+(i-1)*J
 % We reformulate it to have an order of i+(j-1)*N
@@ -55,14 +50,8 @@ end
 
 w_hat_NJ = zeros(N*J,TIME);
 for t=t1:TIME
-    M_tilde_temp = M_tilde(:,:,t);
-    T_temp = T(:,:,t);
-    Q_tilde_temp = Q_tilde(:,:,t);
-    F_tilde_temp = F_tilde(:,:,t);
-    L_hat_T_temp = L_hat_T(:,t);
-    T_hat_T_temp = T_hat_T(:,t);
-    kappa_hat_T_temp = kappa_hat_T(:,t);
-    w_hat_NJ(:,t) = (eye(N*J) - M_tilde_temp - T_temp ) \ ((T_temp-eye(N*J)) * L_hat_T_temp + Q_tilde_temp * T_hat_T_temp + F_tilde_temp * kappa_hat_T_temp);
+    w_hat_NJ(:,t) = (eye(N*J) - M_tilde(:,:,t) - T_tilde(:,:,t) ) \ ((T_tilde(:,:,t)-eye(N*J)) * L_hat_T(:,t) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
+%    w_hat_NJ(:,t) = pinv(eye(N*J) - M_tilde(:,:,t) - T_tilde(:,:,t) ) * ((T_tilde(:,:,t)-eye(N*J)) * L_hat_T(:,t) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
 end
 
 %reshape w_hat_NJ to J by N matrix

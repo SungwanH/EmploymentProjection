@@ -50,7 +50,7 @@ for i=1:N
 end
 %D(ijnom) =
 %-THETA^j{(1-Gamma^ij)*DELTA(ijoj)-DETLA(njoj))*pi(ojmj)GAMMA(mj)}
-%E(nji) = T(ij) -THETA(j){kappa(nji) + sum_o sum_m (1-Gamma^ij)*DELTA(ijoj)-DETLA(njoj))*pi(ojmj)kappa(ojmj)-1/THETA(j)T(mj)} 
+%E(nji) = T_tilde(ij) -THETA(j){kappa(nji) + sum_o sum_m (1-Gamma^ij)*DELTA(ijoj)-DETLA(njoj))*pi(ojmj)kappa(ojmj)-1/THETA(j)T_tilde(mj)} 
 D_temp = zeros(N,J,N,N,TIME,N);
 E_temp = zeros(N,J,N,N,TIME,N);
 F = zeros(N,J,N,N,N,TIME);
@@ -127,7 +127,7 @@ for t=1:TIME
         end
     end
 end
-M1 = sum(M1_temp,4);
+M1 = sum(M1_temp,4); %M1: N*J by N*J by TIME 
 %M2(ijmj) = GAMMA(ij) sum_n chi(nji)(D(njim)+sum_o sum_l G(njol)D(ljom))
 GD_temp = zeros(N,J,N,TIME,N,N);
 M2_temp = zeros(N*J,N*J,TIME,N);
@@ -156,7 +156,7 @@ for t=1:TIME
         end
     end
 end
-M2 = sum(M2_temp,4);
+M2 = sum(M2_temp,4); %M2: N*J by N*J by TIME  
 
 %M3(ijoj) = GAMMA(ij)sum_n chi(nji) sum_l G(njol)C(oj)
 GC_temp = zeros(N,J,N,TIME,N);
@@ -185,24 +185,24 @@ for t=1:TIME
         end
     end
 end
-M3 = sum(M3_temp,4);
+M3 = sum(M3_temp,4); %M3: N*J by N*J by TIME 
 
-%T(ijok) = GAMMA(ij)sum_n chi(nji) (sum_i sum_k H(njok)) sum_i H(njok)
-T_temp = zeros(N*J,N*J,TIME,N);
+%T_tilde(ijok) = GAMMA(ij)sum_n chi(nji) (sum_i sum_k H(njok)) sum_i H(njok)
+T_tilde_temp = zeros(N*J,N*J,TIME,N);
 for t=1:TIME
     for i=1:N
         for j=1:J
             for o=1:N
                 for k=1:J
                     for n=1:N
-                        T_temp(i+(j-1)*N,o+(k-1)*N,t,n) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*H(n,j,o,k,t);
+                        T_tilde_temp(i+(j-1)*N,o+(k-1)*N,t,n) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*H(n,j,o,k,t);
                     end
                 end
             end
         end
     end
 end
-T= sum(T_temp,4);
+T_tilde= sum(T_tilde_temp,4); %T_Tilde: N*J by N*J by TIME 
 
 Q1_temp = zeros(N*J,N*J,TIME,N);
 F1 = zeros(N*J, N*N*J,TIME);
@@ -211,12 +211,12 @@ for t=1:TIME
         for j=1:J
             for n=1:N
                 Q1_temp(i+(j-1)*N,i+(j-1)*N,t,n) = GAMMA(j,i)*chi(n+(j-1)*N,i,t);
-                F1(i+(j-1)*N,n+(i-1)*N+(j-1)*N*N,t)  = -THETA(j)*GAMMA(j,i)*chi(n+(j-1)*N,i,t);
+                F1(i+(j-1)*N,n+(i-1)*N+(j-1)*N*N,t)  = -THETA(j)*GAMMA(j,i)*chi(n+(j-1)*N,i,t); % F1: N*J by N*N*J by TIME
             end
         end
     end
 end
-Q1= sum(Q1_temp,4);
+Q1= sum(Q1_temp,4); % Q1: N*J by N*J by TIME
 
 Q2_temp = zeros(N*J,N*J,TIME,N);
 F2_temp = zeros(N*J,N*N*J,TIME,N);
@@ -234,8 +234,8 @@ for t=1:TIME
         end
     end
 end
-Q2= sum(Q2_temp,4);
-F2= sum(F2_temp,4);
+Q2= sum(Q2_temp,4); % Q2: N*J by N*J by TIME
+F2= sum(F2_temp,4); % F2: N*J by N*N*J by TIME
 
 Q3_temp = zeros(N*J,N*J,TIME,N,N);
 F3_temp = zeros(N*J,N*N*J,TIME,N);
@@ -252,7 +252,7 @@ for t=1:TIME
                         for m=1:N
                             Q4_temp(i+(j-1)*N,m+(j-1)*N,t,n,o,l) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*E(l,j,o,m,t);
                             for h=1:N
-                                F4_temp(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t,n,o,l) = -GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*F(l,j,o,m,h);
+                                F4_temp(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t,n,o,l) = -GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*F(l,j,o,m,h,t);
                             end
                         end
                     end
@@ -261,15 +261,15 @@ for t=1:TIME
         end
     end
 end
-Q3= sum(sum(Q3_temp,4),5);
-F3= sum(F3_temp,4);
-Q4= sum(sum(sum(Q4_temp,4),5),6);
-F4= sum(sum(sum(F4_temp,4),5),6);
+Q3= sum(sum(Q3_temp,4),5);        % Q3: N*J by N*J by TIME
+F3= sum(F3_temp,4);               % F3: N*J by N*N*J by TIME 
+Q4= sum(sum(sum(Q4_temp,4),5),6); % Q4: N*J by N*N*J by TIME
+F4= sum(sum(sum(F4_temp,4),5),6); % F4: N*J by N*N*J by TIME 
 
 % Final equation:
 M_tilde = M1+M2+M3;
 Q_tilde = Q1+Q2+Q3+Q4;
 F_tilde = F1+F2+F3+F4;
 
-mat_pbp = v2struct(M_tilde, Q_tilde, F_tilde, T, DELTA, G, H);
+mat_pbp = v2struct(M_tilde, Q_tilde, F_tilde, T_tilde, DELTA, G, H);
 end

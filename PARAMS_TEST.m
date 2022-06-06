@@ -61,8 +61,8 @@ UPDT_V_NL   = 0.2; %update speed for nonlinear value loop (lower value->conserva
 UPDT_W_NL   = 0.1; %update speed for nonlinear wage loop (lower value->conservative)
 TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
 TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
-TOLDYN      = 1E-7;  %tolerance rate for linear dynamic equilibrium
-TOLTEMP     = 1E-7;  % tolerance rate for linear temporary equilibrium
+TOLDYN      = 1E-11;  %tolerance rate for linear dynamic equilibrium
+TOLTEMP     = 1E-9;  % tolerance rate for linear temporary equilibrium
 MAXIT       = 1E+8; %maximum number of iterations
 
 
@@ -97,7 +97,7 @@ T = PRODUCTIVITY_DGP(params); %objective productivity from the first period and 
 % Derive Time difference productivity
 T_HAT_SS = ones(J,N,TIME_SS);
 rng(20220605)
-T_HAT    = rand(J,N,TIME)*0.1;
+T_HAT    = rand(J,N,TIME);
 for t=1:TIME_SS-1
     T_HAT_SS(:,:,t+1) = T_BASE(:,:,t+1)./T_BASE(:,:,t); %relative change in productivity (US: 2 for all period, CHINA: 1 for all period except the first period)
 end
@@ -113,9 +113,15 @@ params.prod = v2struct(MU, SIGMA, RHO, T_BASE, T_PREV, T, T_HAT, T_HAT_SS,t_bef)
 E_T_hat  = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
 E_T_hat_pf = zeros(J,N,TIME,ENDT+1);
 for t1=1:TIME
-    for t2=1:30
-        E_T_hat(:,:,t1,t2) = 0.1;
+    for t2=1:10
+        E_T_hat(:,1:2,t1,t2) = 0.3;
+        E_T_hat(:,3:N,t1,t2) = -0.3;
     end
+    for t2=11:30
+        E_T_hat(:,1:2,t1,t2) = 0.1;
+        E_T_hat(:,3:N,t1,t2) = -0.1;
+    end
+
 end
 %or tt=1:ENDT+1
 %       E_T_hat(:,CHINA,:,tt) = log(T_belief(:,CHINA,:,tt)) - log(T(:,CHINA,:));

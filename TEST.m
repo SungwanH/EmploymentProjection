@@ -8,9 +8,9 @@ params=PARAMS_TEST(0.5);
 v2struct(params.envr);
 
 %% Switchers for this program; loading data
-RUN_NLPF_HAT_SS = 1; 
-RUN_NLPF_HAT    = 1; 
-RUN_NLPF_DD     = 1; 
+RUN_NLPF_HAT_SS = 0; 
+RUN_NLPF_HAT    = 0; 
+RUN_NLPF_DD     = 0; 
 RUN_DGP         = 1; 
 RUN_RECUR       = 0;
 
@@ -213,7 +213,9 @@ end
 if RUN_DGP ==1
 disp('#################')
 disp('Running DGP')
-    [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_dd, approx_nlpf_dd);        
+tic
+    [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_dd, approx_nlpf_dd);
+toc
 else
     load('DATA/DGP.mat', 'eqm_dgp','approx_dgp'); 
 end
