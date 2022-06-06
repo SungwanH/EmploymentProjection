@@ -209,12 +209,18 @@ else
 end
 %}
 
+
+%% Generate matrices for temporary equilibrium
+tic
+mat_pbp = MAT(params, approx_nlpf_dd);
+toc
+
 %% Obtain DGP path
 if RUN_DGP ==1
 disp('#################')
 disp('Running DGP')
 tic
-    [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_dd, approx_nlpf_dd);
+    [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_dd, approx_nlpf_dd,mat_pbp);
 toc
 else
     load('DATA/DGP.mat', 'eqm_dgp','approx_dgp'); 

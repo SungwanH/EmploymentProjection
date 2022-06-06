@@ -1,4 +1,4 @@
-function [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf, approx_nlpf)
+function [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf, approx_nlpf,mat_pbp)
 % This code gives DGP+PF path
 % From t=ENDT, people gets perfect foresight
 % Until ENDT, people imperfectly guess the future path of productivity
@@ -19,10 +19,6 @@ v2struct(params.belief)
 v2struct(eqm_nlpf)
 v2struct(approx_nlpf)
 
-% Generate matrices for temporary equilibrium
-tic
-mat_pbp = MAT(params, approx_nlpf);
-toc
 %mat_pbp =ones(N,J,TIME);
 % period by period equilibrium
 % Initialize
