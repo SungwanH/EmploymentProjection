@@ -12,6 +12,7 @@ RUN_NLPF_HAT_SS = 0;
 RUN_NLPF_HAT    = 0; 
 RUN_NLPF_DD     = 0; 
 RUN_DGP         = 1; 
+RUN_DGP_HETERO  = 1; 
 RUN_RECUR       = 0;
 
 
@@ -225,3 +226,112 @@ toc
 else
     load('DATA/DGP.mat', 'eqm_dgp','approx_dgp'); 
 end
+
+%% Heterogeneous Belief
+if RUN_DGP_HETERO == 1
+disp('#################')
+disp('Running DGP: HETEROGENEOUS AGENT')
+tic
+    [eqm_dgp_hetero, approx_dgp_hetero] = DGP_HETERO(params, eqm_nlpf_dd, approx_nlpf_dd, mat_pbp);
+toc
+else
+    load('DATA/DGP_HETERO.mat', 'eqm_dgp_hetero','approx_dgp_hetero'); 
+end
+
+
+figure
+hold on
+title('Realized labor in sector 1 region 5')
+%plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp.L_dgp(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_dgp(1,5,1:TIME-1),[1,3,2]),'.')
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_A_dgp(1,5,1:TIME-1,1),[2,3,4,1]),'--')
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_B_dgp(1,5,1:TIME-1,1),[2,3,4,1]),'--')
+legend('Homogeneous Agent (A only)','HETERO:A+B','HETERO:A','HETERO:B','location','best')
+saveas(gcf,'FIGURES/hetero_L_realized.png')
+
+figure
+hold on
+title('Belief in labor path for sector 1 region 5 at t=1')
+%plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp.L_hat(1,5,1:TIME-1,1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_A_hat(1,5,1:TIME-1,1),[2,3,4,1]),'--')
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_B_hat(1,5,1:TIME-1,1),[2,3,4,1]),':')
+legend('Homogeneous Agent (A only)','HETERO:A','HETERO:B','location','best')
+saveas(gcf,'FIGURES/hetero_L_belief_1.png')
+figure
+hold on
+title('Belief in labor path for sector 1 region 5')
+%plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp.L_hat(1,5,1:TIME-1,1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_A_hat(1,5,1:TIME-1,1),[2,3,4,1]),'--')
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_B_hat(1,5,1:TIME-1,1),[2,3,4,1]),':')
+plot(1:TIME-1,permute(eqm_dgp.L_hat(1,5,1:TIME-1,5),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_A_hat(1,5,1:TIME-1,5),[2,3,4,1]),'--')
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_B_hat(1,5,1:TIME-1,5),[2,3,4,1]),':')
+plot(1:TIME-1,permute(eqm_dgp.L_hat(1,5,1:TIME-1,10),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_A_hat(1,5,1:TIME-1,10),[2,3,4,1]),'--')
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_B_hat(1,5,1:TIME-1,10),[2,3,4,1]),':')
+plot(1:TIME-1,permute(eqm_dgp.L_hat(1,5,1:TIME-1,20),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_A_hat(1,5,1:TIME-1,20),[2,3,4,1]),'--')
+plot(1:TIME-1,permute(eqm_dgp_hetero.L_B_hat(1,5,1:TIME-1,20),[2,3,4,1]),':')
+legend('Homogeneous Agent (A only)','HETERO:A','HETERO:B','location','best')
+saveas(gcf,'FIGURES/hetero_L_belief_2.png')
+%{
+E_A_T_hat = params.belief.E_A_T_hat;
+E_B_T_hat = params.belief.E_B_T_hat;
+kappa_A_hat = zeros(N*J,N,TIME);
+kappa_B_hat = zeros(N*J,N,TIME);
+V = zeros(R*J,TIME);
+
+L_A = zeros(N*J,1);
+L_B = zeros(N*J,1);
+L_A_init = zeros(N*J,1);
+L_B_init = zeros(N*J,1);
+L_A_2 = zeros(N*J,1);
+L_B_2 = zeros(N*J,1);   
+MAXIT       = 1E+8;
+TOLFP       = 1E-7;
+for t1=1:ENDT+1
+%L_B_2 = zeros(N*J,1);
+ITER_FP = 0;
+maxerror=1;
+    while (ITER_FP <= MAXIT) && (maxerror > TOLFP)
+    %for t1=1:ENDT+1
+    %L_B_2 = L_B(:,t1+1);
+        [eqm_A] = PBP_DYN_HETERO(params, t1, t1, E_A_T_hat, kappa_A_hat, L_A_init, L_B_2, approx_nlpf_dd, mat_pbp, 1);
+        L_A_new = eqm_A.L_own;
+        L_A_2_new = eqm_A.L_own(:,t1+1);
+        [eqm_B] = PBP_DYN_HETERO(params, t1, t1, E_B_T_hat, kappa_B_hat, L_B_init, L_A_2_new, approx_nlpf_dd, mat_pbp, 2);
+        L_B_new = eqm_B.L_own;
+        L_B_2_new = eqm_B.L_own(:,t1+1);
+        
+%        for t=t1:TIME
+        maxerror=max(abs(L_B_2_new-L_B_2))
+%        end
+        if ITER_FP >3000
+            maxerror(t1:TIME)
+            t1
+            disp('Fixed Point loop err')
+            ITER_FP
+            stop
+        end
+        
+%        L_A_2 = L_A_2_new;
+        L_B_2 = L_B_2_new;
+
+        ITER_FP=ITER_FP+1
+    end
+    L_A_init = L_A_2_new;
+    L_B_init = L_B_2_new;
+    p_A_hat(:,:,t1) = eqm_A.p(:,:,t1);
+    p_B_hat(:,:,t1) = eqm_B.p(:,:,t1);
+    L_A_hat(:,t1+1)=L_A_2_new;
+    L_B_hat(:,t1+1)=L_B_2_new;
+t1
+end
+L_A_hat
+L_B_hat
+p_A_dgp
+p_B_dgp
+%}

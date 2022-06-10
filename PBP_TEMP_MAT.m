@@ -50,10 +50,15 @@ end
 
 w_hat_NJ = zeros(N*J,TIME);
 for t=t1:TIME
-    w_hat_NJ(:,t) = (eye(N*J) - M_tilde(:,:,t) - T_tilde(:,:,t) ) \ ((T_tilde(:,:,t)-eye(N*J)) * L_hat_T(:,t) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
+    temp_right=((T_tilde(:,:,t)-eye(N*J)) * L_hat_T(:,t) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
+    temp_right_truncation=temp_right(2:end);
+    temp_left=(eye(N*J) - M_tilde(:,:,t) - T_tilde(:,:,t) );
+    temp_left_truncation=temp_left(2:end, 2:end);
+    w_hat_NJ(2:N*J,t)=temp_left_truncation\temp_right_truncation;
+%    w_hat_NJ(:,t) = (eye(N*J) - M_tilde(:,:,t) - T_tilde(:,:,t) ) \ ((T_tilde(:,:,t)-eye(N*J)) * L_hat_T(:,t) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
 %    w_hat_NJ(:,t) = pinv(eye(N*J) - M_tilde(:,:,t) - T_tilde(:,:,t) ) * ((T_tilde(:,:,t)-eye(N*J)) * L_hat_T(:,t) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
 end
-
+%w_hat_NJ(:,:)-w_hat_NJ(1,:)
 %reshape w_hat_NJ to J by N matrix
 w_hat = zeros(J,N,TIME);
 for t=t1:TIME

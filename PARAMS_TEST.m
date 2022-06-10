@@ -61,14 +61,15 @@ UPDT_V_NL   = 0.2; %update speed for nonlinear value loop (lower value->conserva
 UPDT_W_NL   = 0.1; %update speed for nonlinear wage loop (lower value->conservative)
 TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
 TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
-TOLDYN      = 1E-11;  %tolerance rate for linear dynamic equilibrium
+TOLDYN      = 1E-9;  %tolerance rate for linear dynamic equilibrium
 TOLTEMP     = 1E-9;  % tolerance rate for linear temporary equilibrium
+TOLFP       = 1E-7;  % tolerance rate for fixed point iteration
 MAXIT       = 1E+8; %maximum number of iterations
 
 
 params.envr = v2struct(TIME, TIME_SS, N, R, C, J, US, CHINA, ENDT, ENDT_SAMPLE, ENDT_DGP, EPST); %remoevd TAU from this structure
 params.modl = v2struct(THETA, NU, BETA, ALPHAS, THETA, GAMMA);
-params.tech = v2struct(ESTM_BOTH, UPDT_V, UPDT_W, UPDT_V_NL, UPDT_W_NL, TOL_NL, TOL_NL_TEMP, TOLDYN, TOLTEMP, MAXIT);
+params.tech = v2struct(ESTM_BOTH, UPDT_V, UPDT_W, UPDT_V_NL, UPDT_W_NL, TOL_NL, TOL_NL_TEMP, TOLDYN, TOLTEMP, TOLFP, MAXIT);
 
 
 %% Productivity
@@ -110,23 +111,41 @@ params.prod = v2struct(MU, SIGMA, RHO, T_BASE, T_PREV, T, T_HAT, T_HAT_SS,t_bef)
 
 %% belief for productivity given the weight
 %T_belief = BELIEF(params, W_TRUE);
-E_T_hat  = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
+E_T_hat  = zeros(J,N,TIME,ENDT+1); 
 E_T_hat_pf = zeros(J,N,TIME,ENDT+1);
-for t1=1:TIME
-    for t2=1:10
+for t1=2:TIME
+    for t2=1:5
+        %E_T_hat(:,:,t1,t2) = rand(J,N);
         E_T_hat(:,1:2,t1,t2) = 0.3;
         E_T_hat(:,3:N,t1,t2) = -0.3;
     end
-    for t2=11:30
+    for t2=6:30
         E_T_hat(:,1:2,t1,t2) = 0.1;
         E_T_hat(:,3:N,t1,t2) = -0.1;
     end
-
 end
+
+% For heterogeneous agent case:
+E_A_T_hat  = E_T_hat;
+E_B_T_hat  = E_T_hat;
+for t1=2:TIME
+    for t2=1:5
+        E_B_T_hat(:,1:2,t1,t2) = -0.3;
+        E_B_T_hat(:,3:N,t1,t2) = 0.3;
+    end
+    for t2=6:30
+        E_B_T_hat(:,1:2,t1,t2) = -0.1;
+        E_B_T_hat(:,3:N,t1,t2) = 0.1;
+    end
+end
+
+share_A = 0.5*ones(R*J,1); % share of type A
+params.hetero=v2struct(E_A_T_hat,E_B_T_hat,share_A);
+
 %or tt=1:ENDT+1
 %       E_T_hat(:,CHINA,:,tt) = log(T_belief(:,CHINA,:,tt)) - log(T(:,CHINA,:));
 %       E_T_hat_pf(:,CHINA,:,tt) = -log(T_belief(:,CHINA,:,tt)) + log(T(:,CHINA,:));        
 %end
-params.belief=v2struct(W_TRUE,E_T_hat,E_T_hat_pf);
+params.belief=v2struct(W_TRUE,E_T_hat,E_A_T_hat,E_B_T_hat,E_T_hat_pf);
 
 end

@@ -19,11 +19,11 @@ chi=approx_nlpf_dd.chi;
 zeta=approx_nlpf_dd.zeta;
 varrho=approx_nlpf_dd.varrho;
 
-T_hat = eqm_dgp.E_T_hat;
-pi=approx_dgp.pi;
-chi=approx_dgp.chi;
-zeta=approx_dgp.zeta;
-varrho=approx_dgp.varrho;
+%T_hat = eqm_dgp.E_T_hat;
+%pi=approx_dgp.pi;
+%chi=approx_dgp.chi;
+%zeta=approx_dgp.zeta;
+%varrho=approx_dgp.varrho;
 %}
 params=PARAMS_TEST(0.5);
 v2struct(params.envr);
@@ -33,7 +33,7 @@ ALPHAS = params.modl.ALPHAS;
 clear approx_dgp VALjn00 Din00 mu0 L0
 %}
 rng(20220605)
-TIME=2;
+TIME=10;
 N=5;
 J=2;
 %{
@@ -560,7 +560,13 @@ for t=1:TIME
     T_hat_T_temp = T_hat_T(:,t);
     kappa_hat_T_temp = kappa_hat_T(:,t);
     w_hat_nj(:,t) = (eye(N*J) - M_tilde_temp - T_tilde_temp ) \ ((T_tilde_temp-eye(N*J)) * L_hat_T_temp + Q_tilde_temp * T_hat_T_temp + F_tilde_temp * kappa_hat_T_temp);
-%        w_hat_nj(:,t) = (eye(N*J) - M_tilde(:,:,t) - T(:,:,t) ) \ ((T(:,:,t)-eye(N*J)) * L_hat_T(:,t) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
+    temp_right=((T_tilde_temp-eye(N*J)) * L_hat_T_temp + Q_tilde_temp * T_hat_T_temp + F_tilde_temp * kappa_hat_T_temp);
+    temp_right_truncation=temp_right(2:end);
+    temp_left=(eye(N*J) - M_tilde_temp - T_tilde_temp );
+    temp_left_truncation=temp_left(2:end, 2:end);
+    w_hat_temp(2:N*J,t)=temp_left_truncation\temp_right_truncation;
+    %invmat(:,:,t) = inv((eye(N*J) - M_tilde_temp - T_tilde_temp ) );
+    %        w_hat_nj(:,t) = (eye(N*J) - M_tilde(:,:,t) - T(:,:,t) ) \ ((T(:,:,t)-eye(N*J)) * L_hat_T(:,t) + Q_tilde(:,:,t) * T_hat_T(:,t) + F_tilde(:,:,t) * kappa_hat_T(:,t));
 end
 w_hat_nj
 %% check: compare RHS of Labor mkt clearing condition from old vs new code

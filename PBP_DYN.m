@@ -58,7 +58,7 @@ while (ITER_DYN <= MAXIT) && (VMAX > TOLDYN)
 %    [w_hat, p_hat, P_hat, pi_hat, X_hat] = PBP_TEMP(params, t1, T_hat, kappa_hat, W, L_hat, approx); %iterative method
 %    W= w_hat; % will be used as next period's initial value
     [w_hat, p_hat, P_hat, pi_hat, X_hat] = PBP_TEMP_MAT(params, t1, T_hat, kappa_hat, L_hat, approx, mat_pbp); % matrix inversion
-
+    
     for t=t1:TIME
         rw_hat(:,:,t) = w_hat(:,:,t) - ones(J,1)*P_hat(1,:,t); %real wage
     end

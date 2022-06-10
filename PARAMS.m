@@ -56,6 +56,7 @@ TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloo
 TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
 TOLDYN      = 1E-7;  %tolerance rate for linear dynamic equilibrium
 TOLTEMP     = 1E-7;  % tolerance rate for linear temporary equilibrium
+TOLFP     = 1E-7;  % tolerance rate for fixed point iteration
 MAXIT       = 1E+8; %maximum number of iterations
 
 
