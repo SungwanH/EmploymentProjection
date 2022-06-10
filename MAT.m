@@ -5,15 +5,7 @@ function mat_pbp = MAT(params, approx)
 v2struct(params.envr);
 v2struct(params.tech);
 v2struct(params.modl);
-%{
-N      =   params.N;
-J      =   params.J;
-THETA  =   params.THETA;
-TIME    =	params.TIME;
-UPDT_W  =	params.UPDT_W;
-TOLTEMP =	params.TOLTEMP;
-MAXIT   =	params.MAXIT;
-%}
+
 %% Roll down approximation points
 varrho  =   approx.varrho;
 zeta    =   approx.zeta;
@@ -39,8 +31,6 @@ for t=1:TIME
     DELTA(:,:,t) = inv(eye(N*J)-BTHETA(:,:,t));
 end
 
-%This is used in deriving p
-
 %C = -THETA^j Gamma^ij
 C= zeros(N,J);
 for i=1:N
@@ -48,6 +38,7 @@ for i=1:N
         C(i,j) = -THETA(j) * GAMMA(j,i);
     end
 end
+
 %D(ijnom) =
 %-THETA^j{(1-Gamma^ij)*DELTA(ijoj)-DETLA(njoj))*pi(ojmj)GAMMA(mj)}
 %E(nji) = T_tilde(ij) -THETA(j){kappa(nji) + sum_o sum_m (1-Gamma^ij)*DELTA(ijoj)-DETLA(njoj))*pi(ojmj)kappa(ojmj)-1/THETA(j)T_tilde(mj)} 
@@ -113,9 +104,7 @@ for t=1:TIME
     end
 end
 
-
 %% Recovering labor market clearing condition
-
 %M1(ijij) = GAMMA(ij)sum_n chi(nji) C(ij) sum_o sum_l G(njol)C(oj)
 M1_temp = zeros(N*J,N*J,TIME,N);
 for t=1:TIME
@@ -263,7 +252,7 @@ for t=1:TIME
 end
 Q3= sum(sum(Q3_temp,4),5);        % Q3: N*J by N*J by TIME
 F3= sum(F3_temp,4);               % F3: N*J by N*N*J by TIME 
-Q4= sum(sum(sum(Q4_temp,4),5),6); % Q4: N*J by N*N*J by TIME
+Q4= sum(sum(sum(Q4_temp,4),5),6); % Q4: N*J by N*J by TIME
 F4= sum(sum(sum(F4_temp,4),5),6); % F4: N*J by N*N*J by TIME 
 
 % Final equation:
