@@ -1,4 +1,4 @@
-function mat_pbp = MAT_CMEX(params, approx)
+function mat_pbp = MAT_CMEXB(params, approx)
 % This function provides matrices which are used in deriving wage
 % using matrix inversion in temporary equilibrium
 
@@ -9,7 +9,7 @@ v2struct(params.modl);
 
 
 %% Set the number of cores
-N_THREAD=6;
+N_THREAD=12;
 
 
 
@@ -328,7 +328,7 @@ end
 %}
 
 
-MAT_CPP_S2
+MAT_CPP_S2B
 
 
 

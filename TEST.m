@@ -212,12 +212,17 @@ end
 
 
 %% Generate matrices for temporary equilibrium
+
 tic
     mat_pbp1 = MAT(params, approx_nlpf_dd);
 toc
 
 tic
     mat_pbp = MAT_CMEX(params, approx_nlpf_dd);
+toc
+
+tic
+    mat_pbp2 = MAT_CMEXB(params, approx_nlpf_dd);
 toc
 
 %% Obtain DGP path
