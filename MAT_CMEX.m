@@ -1,10 +1,17 @@
-function mat_pbp = MAT(params, approx)
+function mat_pbp = MAT_CMEX(params, approx)
 % This function provides matrices which are used in deriving wage
 % using matrix inversion in temporary equilibrium
+
 %% Roll down parameters
 v2struct(params.envr);
 v2struct(params.tech);
 v2struct(params.modl);
+
+
+%% Set the number of cores
+N_THREAD=12;
+
+
 
 %% Roll down approximation points
 varrho  =   approx.varrho;
@@ -12,9 +19,15 @@ zeta    =   approx.zeta;
 chi     =   approx.chi;
 pi      =   approx.pi;
 
+
+%% The following block is to be replaced by STEP1
 BTHETA = zeros(N*J,N*J,TIME);
+U = zeros(N*J,N*J,TIME);
+
 % pi(n*j,i): country n's expenditure share on good j from country i
 % sum(pi(1,:))=1
+
+%{
 for t=1:TIME
     for i=1:N
         for n=1:N
@@ -25,45 +38,6 @@ for t=1:TIME
     end
 end
 
-%Leontief inverse
-DELTA = zeros(N*J,N*J,TIME);
-for t=1:TIME
-    DELTA(:,:,t) = inv(eye(N*J)-BTHETA(:,:,t));
-end
-
-%C = -THETA^j Gamma^ij
-C= zeros(N,J);
-for i=1:N
-    for j=1:J
-        C(i,j) = -THETA(j) * GAMMA(j,i);
-    end
-end
-
-%D(ijnom) =
-%-THETA^j{(1-Gamma^ij)*DELTA(ijoj)-DETLA(njoj))*pi(ojmj)GAMMA(mj)}
-%E(nji) = T_tilde(ij) -THETA(j){kappa(nji) + sum_o sum_m (1-Gamma^ij)*DELTA(ijoj)-DETLA(njoj))*pi(ojmj)kappa(ojmj)-1/THETA(j)T_tilde(mj)} 
-D_temp = zeros(N,J,N,N,TIME,N);
-E_temp = zeros(N,J,N,N,TIME,N);
-F = zeros(N,J,N,N,N,TIME);
-for t=1:TIME
-    for i=1:N
-        for j=1:J
-            for n=1:N
-                for o=1:N
-                    for m=1:N
-                        D_temp(n,j,i,m,t,o) = -THETA(j) * ((1-GAMMA(j,i))*DELTA(i+(j-1)*N,o+(j-1)*N,t)-DELTA(n+(j-1)*N,o+(j-1)*N,t)) * pi(o+(j-1)*N,m,t) * GAMMA(j,m);
-                        E_temp(n,j,i,m,t,o) = ((1-GAMMA(j,i))* DELTA(i+(j-1)*N,o+(j-1)*N,t) - DELTA(n+(j-1)*N,o+(j-1)*N,t))* pi(o+(j-1)*N,m,t);
-                        F(n,j,i,m,o,t) = THETA(j) * ((1-GAMMA(j,i))* DELTA(i+(j-1)*N,o+(j-1)*N,t) - DELTA(n+(j-1)*N,o+(j-1)*N,t)) * pi(o+(j-1)*N,m,t);
-                    end
-                end
-            end
-        end
-    end
-end
-D = sum(D_temp,6);
-E = sum(E_temp,6);
-%% Parts in X (expenditure)
-U = zeros(N*J,N*J,TIME);
 for t=1:TIME
     for i=1:N
         for j=1:J
@@ -73,12 +47,105 @@ for t=1:TIME
         end
     end
 end
+%}
+
+MAT_CPP_S1
+
+%% Back to Matlab for Leontief inverse
+DELTA = zeros(N*J,N*J,TIME);
+
+for t=1:TIME
+    DELTA(:,:,t) = inv(eye(N*J)-BTHETA(:,:,t));
+end
+
 BGAMMA = zeros(N*J,N*J,TIME);
 for t=1:TIME
     BGAMMA(:,:,t) = inv(eye(N*J)-U(:,:,t));
 end
-%G(ijol) = BGAMMA(ijo)(1-Gamma(oj))varrho(ljo)
+
+
+
+
+
+%% Stacking in C, Step II
+C= zeros(N,J);
 G = zeros(N,J,N,N,TIME);
+
+%D_temp = zeros(N,J,N,N,TIME,N);
+%E_temp = zeros(N,J,N,N,TIME,N);
+D=zeros(N,J,N,N,TIME);
+E=zeros(N,J,N,N,TIME);
+
+%GD_temp = zeros(N,J,N,TIME,N,N);
+GD_sum=zeros(N,J,N,TIME);
+
+%T_tilde_temp = zeros(N*J,N*J,TIME,N);
+T_tilde = zeros(N*J,N*J,TIME);
+
+
+%GC_temp = zeros(N,J,N,TIME,N);
+GC_sum = zeros(N,J,N,TIME);
+
+H = zeros(N,J,N,J,TIME);
+
+
+%M1_temp = zeros(N*J,N*J,TIME,N);
+%M2_temp = zeros(N*J,N*J,TIME,N);
+%M3_temp = zeros(N*J,N*J,TIME,N);
+M1 = zeros(N*J,N*J,TIME);
+M2 = zeros(N*J,N*J,TIME);
+M3 = zeros(N*J,N*J,TIME);
+
+
+%Q1_temp = zeros(N*J,N*J,TIME,N);
+%Q2_temp = zeros(N*J,N*J,TIME,N);
+%Q3_temp = zeros(N*J,N*J,TIME,N,N);
+%Q4_temp = zeros(N*J,N*J,TIME,N,N,N);
+
+Q1=  zeros(N*J,N*J,TIME);
+Q2= zeros(N*J,N*J,TIME);
+Q3=zeros(N*J,N*J,TIME);
+Q4= zeros(N*J,N*J,TIME);
+
+%F2_temp = zeros(N*J,N*N*J,TIME,N);
+%F3_temp = zeros(N*J,N*N*J,TIME,N);
+%F4_temp = zeros(N*J,N*J*N,TIME,N,N,N);
+
+
+F = zeros(N,J,N,N,N,TIME);
+F1 = zeros(N*J, N*N*J,TIME);
+F2= zeros(N*J,N*N*J,TIME); % F2: N*J by N*N*J by TIME
+F3=zeros(N*J,N*N*J,TIME);
+F4=zeros(N*J,N*J*N,TIME);
+
+
+
+
+%{
+for i=1:N
+    for j=1:J
+        C(i,j) = -THETA(j) * GAMMA(j,i);
+    end
+end
+
+for t=1:TIME
+    for i=1:N
+        for j=1:J
+            for n=1:N
+                for m=1:N
+                    for o=1:N
+                        D_temp(n,j,i,m,t,o) = -THETA(j) * ((1-GAMMA(j,i))*DELTA(i+(j-1)*N,o+(j-1)*N,t)-DELTA(n+(j-1)*N,o+(j-1)*N,t)) * pi(o+(j-1)*N,m,t) * GAMMA(j,m);
+                        E_temp(n,j,i,m,t,o) = ((1-GAMMA(j,i))* DELTA(i+(j-1)*N,o+(j-1)*N,t) - DELTA(n+(j-1)*N,o+(j-1)*N,t))* pi(o+(j-1)*N,m,t);
+                        F(n,j,i,m,o,t) = THETA(j) * ((1-GAMMA(j,i))* DELTA(i+(j-1)*N,o+(j-1)*N,t) - DELTA(n+(j-1)*N,o+(j-1)*N,t)) * pi(o+(j-1)*N,m,t);
+                        D(n,j,i,m,t)=D(n,j,i,m,t)+D_temp(n,j,i,m,t,o); 
+                        E(n,j,i,m,t)=E(n,j,i,m,t)+E_temp(n,j,i,m,t,o); 
+                    end
+                end
+            end
+        end
+    end
+end
+
 for t=1:TIME
     for i=1:N
         for j=1:J
@@ -91,7 +158,7 @@ for t=1:TIME
     end
 end
 %H(ijok) = BGAMMA(ijo)(ALPHA(oj)chi(okj))
-H = zeros(N,J,N,J,TIME);
+
 for t=1:TIME
     for i=1:N
         for j=1:J
@@ -104,9 +171,8 @@ for t=1:TIME
     end
 end
 
-%% Recovering labor market clearing condition
-%M1(ijij) = GAMMA(ij)sum_n chi(nji) C(ij) sum_o sum_l G(njol)C(oj)
-M1_temp = zeros(N*J,N*J,TIME,N);
+
+
 for t=1:TIME
     for i=1:N
         for j=1:J
@@ -116,10 +182,11 @@ for t=1:TIME
         end
     end
 end
-M1 = sum(M1_temp,4); %M1: N*J by N*J by TIME 
-%M2(ijmj) = GAMMA(ij) sum_n chi(nji)(D(njim)+sum_o sum_l G(njol)D(ljom))
-GD_temp = zeros(N,J,N,TIME,N,N);
-M2_temp = zeros(N*J,N*J,TIME,N);
+
+
+
+
+
 for t=1:TIME
     for n=1:N
         for j=1:J
@@ -127,13 +194,16 @@ for t=1:TIME
                 for o=1:N
                     for l=1:N
                         GD_temp(n,j,m,t,o,l) = G(n,j,o,l,t)*D(l,j,o,m,t);
+                        GD_sum(n, j, m, t) = GD_sum(n, j, m, t) + GD_temp(n, j, m, t, o, l);                        
                     end
                 end
             end
         end
     end
 end
-GD_sum = sum(sum(GD_temp,6),5);
+%GD_sum = sum(sum(GD_temp,6),5);
+
+
 for t=1:TIME
     for n=1:N
         for j=1:J
@@ -145,10 +215,9 @@ for t=1:TIME
         end
     end
 end
-M2 = sum(M2_temp,4); %M2: N*J by N*J by TIME  
+
 
 %M3(ijoj) = GAMMA(ij)sum_n chi(nji) sum_l G(njol)C(oj)
-GC_temp = zeros(N,J,N,TIME,N);
 for t=1:TIME
     for n=1:N
         for j=1:J
@@ -160,9 +229,8 @@ for t=1:TIME
         end
     end
 end
-GC_sum = sum(GC_temp,5);
+%GC_sum = sum(GC_temp,5);
 
-M3_temp = zeros(N*J,N*J,TIME,N);
 for t=1:TIME
     for i=1:N
         for j=1:J
@@ -174,10 +242,10 @@ for t=1:TIME
         end
     end
 end
-M3 = sum(M3_temp,4); %M3: N*J by N*J by TIME 
+
 
 %T_tilde(ijok) = GAMMA(ij)sum_n chi(nji) (sum_i sum_k H(njok)) sum_i H(njok)
-T_tilde_temp = zeros(N*J,N*J,TIME,N);
+
 for t=1:TIME
     for i=1:N
         for j=1:J
@@ -191,10 +259,9 @@ for t=1:TIME
         end
     end
 end
-T_tilde= sum(T_tilde_temp,4); %T_Tilde: N*J by N*J by TIME 
 
-Q1_temp = zeros(N*J,N*J,TIME,N);
-F1 = zeros(N*J, N*N*J,TIME);
+
+
 for t=1:TIME
     for i=1:N
         for j=1:J
@@ -205,10 +272,8 @@ for t=1:TIME
         end
     end
 end
-Q1= sum(Q1_temp,4); % Q1: N*J by N*J by TIME
 
-Q2_temp = zeros(N*J,N*J,TIME,N);
-F2_temp = zeros(N*J,N*N*J,TIME,N);
+
 for t=1:TIME
     for i=1:N
         for j=1:J
@@ -223,14 +288,6 @@ for t=1:TIME
         end
     end
 end
-Q2= sum(Q2_temp,4); % Q2: N*J by N*J by TIME
-F2= sum(F2_temp,4); % F2: N*J by N*N*J by TIME
-
-Q3_temp = zeros(N*J,N*J,TIME,N,N);
-F3_temp = zeros(N*J,N*N*J,TIME,N);
-Q4_temp = zeros(N*J,N*J,TIME,N,N,N);
-%F4_temp = zeros(N*J,N*J*N,TIME,N,N,N);  there might be an error in the declaration of F4_temp = zeros(N*J,N*J,TIME,N,N,N);
-F4= zeros(N*J,N*J*N,TIME); %=sum(sum(sum(F4_temp,4),5),6);  
 
 for t=1:TIME
     for i=1:N
@@ -242,23 +299,8 @@ for t=1:TIME
                         F3_temp(i+(j-1)*N,l+(o-1)*N+(j-1)*N*N,t,n) = -THETA(j)*GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t);
                         for m=1:N
                             Q4_temp(i+(j-1)*N,m+(j-1)*N,t,n,o,l) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*E(l,j,o,m,t);
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
-for t=1:TIME
-    for i=1:N
-        for j=1:J
-            for m=1:N
-                for h=1:N
-                    for n=1:N
-                        for o=1:N
-                            for l=1:N
-                                F4(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t) =F4(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t) -GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*F(l,j,o,m,h,t);
+                            for h=1:N
+                                F4_temp(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t,n,o,l) = -GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*F(l,j,o,m,h,t);
                             end
                         end
                     end
@@ -269,10 +311,28 @@ for t=1:TIME
 end
 
 
-Q3= sum(sum(Q3_temp,4),5);        % Q3: N*J by N*J by TIME
-F3= sum(F3_temp,4);               % F3: N*J by N*N*J by TIME 
-Q4= sum(sum(sum(Q4_temp,4),5),6); % Q4: N*J by N*J by TIME
+%F2= sum(F2_temp,4); % F2: N*J by N*N*J by TIME
+%M1 = sum(M1_temp,4); %M1: N*J by N*J by TIME 
+%M2 = sum(M2_temp,4); %M2: N*J by N*J by TIME  
+%M3 = sum(M3_temp,4); %M3: N*J by N*J by TIME 
+%Q1= sum(Q1_temp,4); % Q1: N*J by N*J by TIME
+%Q2= sum(Q2_temp,4); % Q2: N*J by N*J by TIME
+%T_tilde= sum(T_tilde_temp,4); %T_Tilde: N*J by N*J by TIME 
 
+%Q3= sum(sum(Q3_temp,4),5);        % Q3: N*J by N*J by TIME
+%F3= sum(F3_temp,4);               % F3: N*J by N*N*J by TIME 
+
+%Q4= sum(sum(sum(Q4_temp,4),5),6); % Q4: N*J by N*J by TIME
+%F4= sum(sum(sum(F4_temp,4),5),6); % F4: N*J by N*N*J by TIME 
+%}
+
+
+MAT_CPP_S2
+
+
+
+
+%% EXIT LOOP HERE
 % Final equation:
 M_tilde = M1+M2+M3;
 Q_tilde = Q1+Q2+Q3+Q4;
