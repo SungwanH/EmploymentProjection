@@ -1,6 +1,6 @@
 function [params] = PARAMS_TEST(W_TRUE)
-TIME    =100; 
-TIME_SS = 200;
+TIME    =50; 
+TIME_SS = 50;
 N       = 87; 
 R       = 50; %number of US regions
 C       = 37; %number of non-US countries (To be used later)
@@ -22,7 +22,7 @@ BETA    = 0.9227; %discount rate (0.99^8: transformed from quarterly to bi-annua
 
 % Baseline:  
 SIGMA       = 0.01; % s.d. of catch-up
-ENDT        = 30; %Last period of learning (PF starts from here)
+ENDT        = 1; %Last period of learning (PF starts from here)
 ENDT_SAMPLE = 1;
 ENDT_DGP    = 1;
 EPST        = 30; %Length of epsilon draw
@@ -34,15 +34,19 @@ R       = 5; %number of US regions
 C       = 0; %number of non-US countries (To be used later)
 J       = 2; %number of sectors
 US      = 2;
-CHINA   = 1; %region number for now assume the shock is to California
+CHINA   = 5; %region number for now assume the shock is to California
 
+rng(20220625)
 ALPHAS=1/J*ones(J,N);
+%ALPHAS(1,:)=0.6;
+%ALPHAS(2,:)=0.4;
 %ALPHAS(1,1:3)=0.4;
 %ALPHAS(2,1:3)=0.6;
 %ALPHAS(1,4:5)=0.7;
 %ALPHAS(2,4:5)=0.3;
-THETA=4*ones(J,1);
-GAMMA=0.5*ones(J,N);
+THETA=11*ones(J,1);
+%GAMMA=0.5*ones(J,N);
+GAMMA=max(rand(J,N),0.3);%0.5*ones(J,N);
 %GAMMA(1,1:3)=0.7;
 %GAMMA(2,1:3)=0.4;
 %GAMMA(2,4:N)=0.6;
@@ -55,14 +59,14 @@ NU = 1.3;
 
 %% Technical parameters
 ESTM_BOTH   = 0; % if ESTM_BOTH =0, estimate MU only. if =1, estimate both MU and RHO
-UPDT_V      = 0.3; %update speed for value loop (lower value->conservative)
-UPDT_W      = 0.1; %update speed for wage loop (lower value->conservative)
+UPDT_V      = 0.4; %update speed for value loop (lower value->conservative)
+UPDT_W      = 0.2; %update speed for wage loop (lower value->conservative)
 UPDT_V_NL   = 0.2; %update speed for nonlinear value loop (lower value->conservative)
 UPDT_W_NL   = 0.1; %update speed for nonlinear wage loop (lower value->conservative)
-TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
-TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
-TOLDYN      = 1E-9;  %tolerance rate for linear dynamic equilibrium
-TOLTEMP     = 1E-9;  % tolerance rate for linear temporary equilibrium
+TOL_NL      = 1E-8;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
+TOL_NL_TEMP = 1E-8;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
+TOLDYN      = 1E-8;  %tolerance rate for linear dynamic equilibrium
+TOLTEMP     = 1E-8;  % tolerance rate for linear temporary equilibrium
 TOLFP       = 1E-7;  % tolerance rate for fixed point iteration
 MAXIT       = 1E+8; %maximum number of iterations
 
@@ -94,10 +98,18 @@ end
 params.prod = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO);
 
 T = PRODUCTIVITY_DGP(params); %objective productivity from the first period and on
-
+T(1:J,1,1:30) = repmat(reshape(linspace(T_BASE(1,1,1),T_BASE(1,1,30).*2,30),1,1,30),J,1,1);
+T(1:J,1,31:TIME) = T_BASE(1,1,30)*2;
+T(1:J,2,1:30) = repmat(reshape(linspace(T_BASE(1,2,1),T_BASE(1,2,30).*1.5,30),1,1,30),J,1,1);
+T(1:J,2,31:TIME) = T_BASE(1,2,30)*1.5;
+T(1:J,3,1:30) = repmat(reshape(linspace(T_BASE(1,3,1),T_BASE(1,3,30).*1.3,30),1,1,30),J,1,1);
+T(1:J,3,31:TIME) = T_BASE(1,3,30)*1.3;
+T(1:J,4,1:30) = repmat(reshape(linspace(T_BASE(1,4,1),T_BASE(1,4,30).*1,30),1,1,30),J,1,1);
+T(1:J,4,31:TIME) = T_BASE(1,4,30)*1;
+T(1:J,5,1:30) = repmat(reshape(linspace(T_BASE(1,5,1),T_BASE(1,5,30).*0.8,30),1,1,30),J,1,1);
+T(1:J,5,31:TIME) = T_BASE(1,5,30)*0.8;
 % Derive Time difference productivity
 T_HAT_SS = ones(J,N,TIME_SS);
-rng(20220605)
 T_HAT    = rand(J,N,TIME);
 for t=1:TIME_SS-1
     T_HAT_SS(:,:,t+1) = T_BASE(:,:,t+1)./T_BASE(:,:,t); %relative change in productivity (US: 2 for all period, CHINA: 1 for all period except the first period)
@@ -107,6 +119,13 @@ for t=1:TIME-1
 end
 params.prod = v2struct(MU, SIGMA, RHO, T_BASE, T_PREV, T, T_HAT, T_HAT_SS,t_bef);
 
+% This is used in testing second order approximation error
+E_T_hat_test = zeros(J,N,TIME,ENDT+1); %Deviation from the baseline level
+for t1=1:TIME
+    for t2=1:ENDT+1
+        E_T_hat_test(:,:,t1,t2) = log(T(:,:,t1))-log(T_BASE(:,:,t1));
+    end
+end
 
 
 %% belief for productivity given the weight
@@ -146,6 +165,6 @@ params.hetero=v2struct(E_A_T_hat,E_B_T_hat,share_A);
 %       E_T_hat(:,CHINA,:,tt) = log(T_belief(:,CHINA,:,tt)) - log(T(:,CHINA,:));
 %       E_T_hat_pf(:,CHINA,:,tt) = -log(T_belief(:,CHINA,:,tt)) + log(T(:,CHINA,:));        
 %end
-params.belief=v2struct(W_TRUE,E_T_hat,E_A_T_hat,E_B_T_hat,E_T_hat_pf);
+params.belief=v2struct(W_TRUE,E_T_hat,E_T_hat_test,E_A_T_hat,E_B_T_hat,E_T_hat_pf);
 
 end
