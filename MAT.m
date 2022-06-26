@@ -11,7 +11,6 @@ varrho  =   approx.varrho;
 zeta    =   approx.zeta;
 chi     =   approx.chi;
 pi      =   approx.pi;
-
 BTHETA = zeros(N*J,N*J,TIME);
 % pi(n*j,i): country n's expenditure share on good j from country i
 % sum(pi(1,:))=1
@@ -229,7 +228,9 @@ F2= sum(F2_temp,4); % F2: N*J by N*N*J by TIME
 Q3_temp = zeros(N*J,N*J,TIME,N,N);
 F3_temp = zeros(N*J,N*N*J,TIME,N);
 Q4_temp = zeros(N*J,N*J,TIME,N,N,N);
-F4_temp = zeros(N*J,N*J,TIME,N,N,N);
+%F4_temp = zeros(N*J,N*J*N,TIME,N,N,N);  there might be an error in the declaration of F4_temp = zeros(N*J,N*J,TIME,N,N,N);
+F4= zeros(N*J,N*J*N,TIME); %=sum(sum(sum(F4_temp,4),5),6);  
+
 for t=1:TIME
     for i=1:N
         for j=1:J
@@ -240,8 +241,23 @@ for t=1:TIME
                         F3_temp(i+(j-1)*N,l+(o-1)*N+(j-1)*N*N,t,n) = -THETA(j)*GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t);
                         for m=1:N
                             Q4_temp(i+(j-1)*N,m+(j-1)*N,t,n,o,l) = GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*E(l,j,o,m,t);
-                            for h=1:N
-                                F4_temp(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t,n,o,l) = -GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*F(l,j,o,m,h,t);
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+for t=1:TIME
+    for i=1:N
+        for j=1:J
+            for m=1:N
+                for h=1:N
+                    for n=1:N
+                        for o=1:N
+                            for l=1:N
+                                F4(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t) =F4(i+(j-1)*N,h+(m-1)*N+(j-1)*N*N,t) -GAMMA(j,i)*chi(n+(j-1)*N,i,t)*G(n,j,o,l,t)*F(l,j,o,m,h,t);
                             end
                         end
                     end
@@ -250,10 +266,11 @@ for t=1:TIME
         end
     end
 end
+
+
 Q3= sum(sum(Q3_temp,4),5);        % Q3: N*J by N*J by TIME
 F3= sum(F3_temp,4);               % F3: N*J by N*N*J by TIME 
 Q4= sum(sum(sum(Q4_temp,4),5),6); % Q4: N*J by N*J by TIME
-F4= sum(sum(sum(F4_temp,4),5),6); % F4: N*J by N*N*J by TIME 
 
 % Final equation:
 M_tilde = M1+M2+M3;

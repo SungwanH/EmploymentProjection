@@ -26,7 +26,7 @@ ENDT        = 80; %Last period of learning (PF starts from here)
 ENDT_SAMPLE = 1;
 ENDT_DGP    = 1;
 EPST        = 30; %Length of epsilon draw
-
+%{
 
 %% FAKE DATA
 N       = 10; 
@@ -44,7 +44,7 @@ BETA = 0.8;
 NU = 1.3;
 %BETA =0.85;
 
-
+%}
 
 %% Technical parameters
 ESTM_BOTH   = 0; % if ESTM_BOTH =0, estimate MU only. if =1, estimate both MU and RHO
