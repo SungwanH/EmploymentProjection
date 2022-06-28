@@ -7,7 +7,7 @@ clc;
 
 rng(20220620)
 N=5; % Since I assume kappa =1 for all regions, increasing number of regions does not give variances
-J=50;
+J=40;
 
 ALPHAS=1/J*ones(J,N);
 THETA=5*ones(J,1);  
@@ -157,7 +157,8 @@ while (ITER_SO <= MAXIT) && (pmax_SO > TOLTEMP)
             end
         end
     end
-    p_hat_new_SO(:,:) = sum(P_w+P_p+P_T,3)  + (1/2) * sum(sum(P_ww+P_pp+P_TT+P_wT+P_pT+P_wp,4),3);
+    p_hat_new_SO(:,:) = sum(P_w+P_p+P_T,3)  + (1/2) * sum(sum(P_ww+P_pp+P_TT,4),3) + sum(sum(P_wT+P_pT+P_wp,4),3);
+%    p_hat_new_SO(:,:) = sum(P_w+P_p+P_T,3)  + (1/2) * sum(sum(P_ww+P_pp+P_TT+P_wT+P_pT+P_wp,4),3);
     %p_hat_new_SO(:,:) = sum(P_w+P_p+P_T,3); % first-order approximation
   
     pmax_SO=max(max(abs(p_hat_new_SO(:,:)-p_hat_old_SO(:,:))));

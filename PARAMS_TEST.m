@@ -36,7 +36,7 @@ J       = 2; %number of sectors
 US      = 2;
 CHINA   = 5; %region number for now assume the shock is to California
 
-rng(20220625)
+rng(20220626)
 ALPHAS=1/J*ones(J,N);
 %ALPHAS(1,:)=0.6;
 %ALPHAS(2,:)=0.4;
@@ -44,9 +44,9 @@ ALPHAS=1/J*ones(J,N);
 %ALPHAS(2,1:3)=0.6;
 %ALPHAS(1,4:5)=0.7;
 %ALPHAS(2,4:5)=0.3;
-THETA=11*ones(J,1);
-%GAMMA=0.5*ones(J,N);
-GAMMA=max(rand(J,N),0.3);%0.5*ones(J,N);
+THETA=7*ones(J,1);
+GAMMA=0.5*ones(J,N);
+%GAMMA=max(rand(J,N),0.3);%0.5*ones(J,N);
 %GAMMA(1,1:3)=0.7;
 %GAMMA(2,1:3)=0.4;
 %GAMMA(2,4:N)=0.6;
@@ -63,10 +63,10 @@ UPDT_V      = 0.4; %update speed for value loop (lower value->conservative)
 UPDT_W      = 0.2; %update speed for wage loop (lower value->conservative)
 UPDT_V_NL   = 0.2; %update speed for nonlinear value loop (lower value->conservative)
 UPDT_W_NL   = 0.1; %update speed for nonlinear wage loop (lower value->conservative)
-TOL_NL      = 1E-8;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
-TOL_NL_TEMP = 1E-8;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
-TOLDYN      = 1E-8;  %tolerance rate for linear dynamic equilibrium
-TOLTEMP     = 1E-8;  % tolerance rate for linear temporary equilibrium
+TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
+TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
+TOLDYN      = 1E-7;  %tolerance rate for linear dynamic equilibrium
+TOLTEMP     = 1E-7;  % tolerance rate for linear temporary equilibrium
 TOLFP       = 1E-7;  % tolerance rate for fixed point iteration
 MAXIT       = 1E+8; %maximum number of iterations
 
@@ -97,17 +97,18 @@ end
 
 params.prod = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO);
 
-T = PRODUCTIVITY_DGP(params); %objective productivity from the first period and on
-T(1:J,1,1:30) = repmat(reshape(linspace(T_BASE(1,1,1),T_BASE(1,1,30).*2,30),1,1,30),J,1,1);
-T(1:J,1,31:TIME) = T_BASE(1,1,30)*2;
-T(1:J,2,1:30) = repmat(reshape(linspace(T_BASE(1,2,1),T_BASE(1,2,30).*1.5,30),1,1,30),J,1,1);
-T(1:J,2,31:TIME) = T_BASE(1,2,30)*1.5;
-T(1:J,3,1:30) = repmat(reshape(linspace(T_BASE(1,3,1),T_BASE(1,3,30).*1.3,30),1,1,30),J,1,1);
-T(1:J,3,31:TIME) = T_BASE(1,3,30)*1.3;
-T(1:J,4,1:30) = repmat(reshape(linspace(T_BASE(1,4,1),T_BASE(1,4,30).*1,30),1,1,30),J,1,1);
-T(1:J,4,31:TIME) = T_BASE(1,4,30)*1;
-T(1:J,5,1:30) = repmat(reshape(linspace(T_BASE(1,5,1),T_BASE(1,5,30).*0.8,30),1,1,30),J,1,1);
-T(1:J,5,31:TIME) = T_BASE(1,5,30)*0.8;
+T = PRODUCTIVITY_DGP(params); %objective productivity from the first period and on (not used in testing second order)
+%The following productivity path is used in the testcode for second-order:
+T(1:J,1,1:20) = repmat(reshape(linspace(T_BASE(1,1,1),T_BASE(1,1,20).*1.3,20),1,1,20),J,1,1);
+T(1:J,1,21:TIME) = T_BASE(1,1,20)*1.3;
+T(1:J,2,1:20) = repmat(reshape(linspace(T_BASE(1,2,1),T_BASE(1,2,20).*1,20),1,1,20),J,1,1);
+T(1:J,2,21:TIME) = T_BASE(1,2,20)*1;
+T(1:J,3,1:20) = repmat(reshape(linspace(T_BASE(1,3,1),T_BASE(1,3,20).*1,20),1,1,20),J,1,1);
+T(1:J,3,21:TIME) = T_BASE(1,3,20)*1;
+T(1:J,4,1:20) = repmat(reshape(linspace(T_BASE(1,4,1),T_BASE(1,4,20).*1,20),1,1,20),J,1,1);
+T(1:J,4,21:TIME) = T_BASE(1,4,20)*1;
+T(1:J,5,1:20) = repmat(reshape(linspace(T_BASE(1,5,1),T_BASE(1,5,20).*0.7,20),1,1,20),J,1,1);
+T(1:J,5,21:TIME) = T_BASE(1,5,20)*0.7;
 % Derive Time difference productivity
 T_HAT_SS = ones(J,N,TIME_SS);
 T_HAT    = rand(J,N,TIME);
@@ -138,10 +139,10 @@ for t1=2:TIME
         E_T_hat(:,1:2,t1,t2) = 0.3;
         E_T_hat(:,3:N,t1,t2) = -0.3;
     end
-    for t2=6:30
-        E_T_hat(:,1:2,t1,t2) = 0.1;
-        E_T_hat(:,3:N,t1,t2) = -0.1;
-    end
+%    for t2=6:20
+%        E_T_hat(:,1:2,t1,t2) = 0.1;
+%        E_T_hat(:,3:N,t1,t2) = -0.1;
+%    end
 end
 
 % For heterogeneous agent case:
@@ -152,7 +153,7 @@ for t1=2:TIME
         E_B_T_hat(:,1:2,t1,t2) = -0.3;
         E_B_T_hat(:,3:N,t1,t2) = 0.3;
     end
-    for t2=6:30
+    for t2=6:20
         E_B_T_hat(:,1:2,t1,t2) = -0.1;
         E_B_T_hat(:,3:N,t1,t2) = 0.1;
     end

@@ -74,8 +74,8 @@ w_guess   = ones(J,N); %initial guess for wage
 p_guess   = ones(J,N); %initial guess for good prices
 kappa_hat = ones(J*N,N); % relative change in trade cost
 Ljn_hat          = ones(J,N);
-%Ljn_hat(1,1)          = 1.05;
-%Ljn_hat(J,N)          = 0.95;
+Ljn_hat(1,1)          = 1.05;
+Ljn_hat(J,N)          = 0.95;
 t1 = 2; % The initial period of a productivity shock
 T_hat = params.prod.T_HAT(:,:,t1); %This is double diff T_HAT
 VALjn0 = eqm_nlpf_HAT_SS.VALjn00(:,:,TIME_SS); %value added
@@ -84,8 +84,8 @@ Din = approx_nlpf_HAT_SS.pi(:,:,TIME_SS);  % initial trade share
 
 %% Compute first-order and second-order approx. to the temporary equilibrium
 L_hat = zeros(R*J,TIME);
-%L_hat(1,2) =log(1.05)-log(1);
-%L_hat(R*J,2) =log(0.95)-log(1);
+L_hat(1,2) =log(1.05)-log(1);
+L_hat(R*J,2) =log(0.95)-log(1);
 T_hat = params.belief.E_T_hat_test; % log difference btw initial steady state
 kappa_hat=zeros(J*N,N,TIME);
 W = zeros(J,N,TIME); %initial guess
@@ -102,7 +102,7 @@ wf0_SO = exp(w_hat_SO(:,:,t1)); % wage from second-order approx.
 
 p = [reshape(pf0,N*J,1) reshape(pf0_FO,N*J,1) reshape(pf0_SO,N*J,1)];
 w = [reshape(wf0,N*J,1) reshape(wf0_FO,N*J,1) reshape(wf0_SO,N*J,1)];
-rw = w/p;
+rw = w./p;
 
 disp('Approximation Errors')
 disp('approx. error on price')

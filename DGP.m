@@ -32,13 +32,14 @@ L_hat     = NaN(J,R,TIME,ENDT+1);
 L_dgp     = zeros(J,R,TIME);
 kappa_hat = zeros(N*J,N,TIME);
 L = zeros(R*J,1); %initial deviation from the path around which we are linearizing
-for t1=1:ENDT+1
+for t1=1:1%ENDT+1
     tic
     if t1 ==1 
          V = zeros(R*J,TIME); %initial value for v_hat
          W = zeros(J,N,TIME);
     end
-    [eqm_temp] = PBP_DYN(params, t1, t1, E_T_hat, kappa_hat, L, V, W, approx_nlpf,mat_pbp);
+    [eqm_temp] = PBP_DYN(params, t1, t1, E_T_hat_test, kappa_hat, L, V, W, approx_nlpf,mat_pbp);
+%    [eqm_temp] = PBP_DYN_SO(params, t1, t1, E_T_hat_test, kappa_hat, L, V, W, eqm_nlpf, approx_nlpf);
                       
     L = eqm_temp.L(:,t1+1); % update the initial value of labor 
     V = eqm_temp.v; % update the initial value of V

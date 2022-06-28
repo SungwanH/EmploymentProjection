@@ -5,15 +5,18 @@ digits(50)
 
 
 params=PARAMS_TEST(0.5);
+%params=PARAMS(0.5);
 v2struct(params.envr);
 
 %% Switchers for this program; loading data
-RUN_NLPF_HAT_SS = 0; 
-RUN_NLPF_HAT    = 0; 
-RUN_NLPF_DD     = 0; 
-RUN_DGP         = 1; 
-RUN_DGP_HETERO  = 1; 
-RUN_RECUR       = 0;
+RUN_NLPF_HAT_SS   = 1; 
+RUN_NLPF_HAT      = 1; 
+RUN_NLPF_DD       = 0; 
+%RUN_NLPF_DD_BELIEF= 0; 
+RUN_DGP_SO        = 0; 
+RUN_DGP           = 0; 
+RUN_DGP_HETERO    = 0; 
+RUN_RECUR         = 0;
 
 
 
@@ -35,7 +38,7 @@ if RUN_NLPF_HAT_SS ==1
     % Generate the initial value of the model: run the temporary
     % equilibrium once for consistency; everything about it will be stored
     % in the structure named 'temporary_struct'
-    temporary_struct. w_guess   = ones(J,N); %initial guess for wage
+    temporary_struct.w_guess   = ones(J,N); %initial guess for wage
     temporary_struct.p_guess   = ones(J,N); %initial guess for good prices
     temporary_struct.kappa_hat = ones(J*N,N); % relative change in trade cost
     
@@ -116,6 +119,7 @@ hat_fundamental_cross.T_HAT = ones(J,N,TIME);
 for t=1:TIME-1
     hat_fundamental_cross.T_HAT(:,:,t+1)= (params.prod.T(:,:,t+1)./params.prod.T(:,:,t))./ones(J,N,1); 
 end
+%    hat_fundamental_cross.T_HAT(:,:,2) = params.belief.E_T_hat_test(:,:,2,1)+1;
 hat_fundamental_cross.TIME=TIME;
 
 if RUN_NLPF_DD ==1
@@ -154,7 +158,7 @@ if RUN_NLPF_DD ==1
     [eqm_nlpf_dd, approx_nlpf_dd] = NLPF_DD_NEW(params_NLPF, starting_point_dd, base_point_dd, hat_fundamental_cross, initial_guess_cross);
 
     save('DATA/NLPF_DD.mat', 'eqm_nlpf_dd','approx_nlpf_dd');     
-    clear  eqm_nlpf_HAT_SS approx_nlpf_HAT_SS   
+%    clear  eqm_nlpf_HAT_SS approx_nlpf_HAT_SS   
 else
     load('DATA/NLPF_DD.mat','eqm_nlpf_dd','approx_nlpf_dd'); %loading the equilibrium values in the counterfactual economy
 end
@@ -165,11 +169,12 @@ end
 params_NLPF=rmfield(params,'prod');
 hat_fundamental_cross_belief.T_HAT = ones(J,N,TIME);
 for t=1:TIME-1
-    hat_fundamental_cross_belief.T_HAT(:,:,t+1)=(params.belief.T_belief(:,:,t+1,1)./params.belief.T_belief(:,:,t,1))./ones(J,N,1); 
+%    hat_fundamental_cross_belief.T_HAT(:,:,t+1)=(params.belief.T_belief(:,:,t+1,1)./params.belief.T_belief(:,:,t,1))./ones(J,N,1); 
+    hat_fundamental_cross_belief.T_HAT(:,:,t+1)=(exp(params.belief.E_T_hat(:,:,t+1,1))./exp(params.belief.E_T_hat(:,:,t,1)))./ones(J,N,1); 
 end
 hat_fundamental_cross_belief.TIME=TIME;
 
-if RUN_NLPF_DD ==1
+if RUN_NLPF_DD_BELIEF ==1
     disp('#################')
     disp('Running NLPF_CROSS (With Belief)')
     
@@ -209,33 +214,227 @@ else
     load('DATA/NLPF_DD_BELIEF.mat','eqm_nlpf_dd_belief','approx_nlpf_dd_belief'); %loading the equilibrium values in the counterfactual economy
 end
 %}
+%}
+%{
+    load('DATA/NLPF_HAT_SS.mat','eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS')
+w_guess   = ones(J,N); %initial guess for wage
+p_guess   = ones(J,N); %initial guess for good prices
+kappa_hat = ones(J*N,N); % relative change in trade cost
+Ljn_hat          = ones(J,N);
+Ljn_hat(1,1)          = 1.05;
+Ljn_hat(J,N)          = 0.95;
+T_hat = hat_fundamental_cross.T_HAT(:,:,2);
+VALjn0 = eqm_nlpf_HAT_SS.VALjn00(:,:,TIME_SS); 
+Din = approx_nlpf_HAT_SS.pi(:,:,TIME_SS); 
+[wf0, pf0,~,~,~,~] = NLPF_TEMP_HAT(params, VALjn0, Din, kappa_hat, T_hat, Ljn_hat, w_guess, p_guess);
 
+L_hat = zeros(R*J,TIME);
+L_hat(1,2) =log(1.05)-log(1);
+L_hat(R*J,2) =log(0.95)-log(1);
+T_hat = params.belief.E_T_hat_test;
+kappa_hat=zeros(J*N,N,TIME);
+W = zeros(J,N,TIME);
+approx = approx_nlpf_HAT_SS;
+[w_hat, p_hat, P_hat, pi_hat, X_hat] = PBP_TEMP(params, 2, T_hat, kappa_hat, W, L_hat, approx);
+
+[w_hat_SO, p_hat_SO, P_hat_SO, pi_hat_SO, X_hat_SO] = PBP_TEMP_SO(params, 2, T_hat, kappa_hat, W, L_hat, approx);
+pf0_FO = exp(p_hat(:,:,2));
+pf0_SO = exp(p_hat_SO(:,:,2));
+wf0_FO = exp(w_hat(:,:,2));
+wf0_SO = exp(w_hat_SO(:,:,2));
+
+p = [reshape(pf0,N*J,1) reshape(pf0_FO,N*J,1) reshape(pf0_SO,N*J,1)];
+w = [reshape(wf0,N*J,1) reshape(wf0_FO,N*J,1) reshape(wf0_SO,N*J,1)];
+rw = w./p;
+%[reshape(pf0-wf0,N*J,1) reshape(pf0_FO(:,:,2)-wf0_FO(:,:,2),N*J,1) reshape(pf0_SO(:,:,2)-wf0_SO(:,:,2),N*J,1)];
+
+sum(abs(p(:,1)-p(:,2))) % error of the first order approx.
+sum(abs(p(:,1)-p(:,3))) % error of the second order approx.
+sum(abs(w(:,1)-w(:,2))) % error of the first order approx.
+sum(abs(w(:,1)-w(:,3))) % error of the second order approx.
+sum(abs(rw(:,1)-rw(:,2))) % error of the first order approx.
+sum(abs(rw(:,1)-rw(:,3))) % error of the second order approx.
+
+x = linspace(min(min(rw)),max(max(rw)));
+y = x;
+figure
+hold on
+plot(x,y,'black')
+scatter(rw(:,1),rw(:,2),'red')
+scatter(rw(:,1),rw(:,3),'blue','d')
+xlabel('Nonlinear hat (realwage)') 
+ylabel('Approximation (realwage)') 
+legend('45 degree line', 'First Order', 'Second Order', 'location', 'best')
+title('Level / FO / SO Comparison')
+
+%}
+
+tic
+%    mat_pbp = MAT_CMEX(params, approx_nlpf_dd);
+    mat_pbp = MAT_CMEX(params, approx_nlpf_HAT_SS);
+toc
+[eqm_dgp_so] = SO_OUT(params, eqm_nlpf_HAT_SS, approx_nlpf_HAT_SS);
+[eqm_dgp] = FO_OUT(params, eqm_nlpf_HAT_SS, approx_nlpf_HAT_SS, mat_pbp);
+
+
+
+
+%% Obtain DGP path using second order
+if RUN_DGP_SO ==1
+disp('#################')
+disp('Running DGP_Second Order')
+%tic
+    [eqm_dgp_so, approx_dgp_so] = DGP_SO(params, eqm_nlpf_HAT_SS, approx_nlpf_HAT_SS);
+%    [eqm_dgp_so, approx_dgp_so] = DGP_SO(params, eqm_nlpf_dd, approx_nlpf_dd);
+%toc
+else
+    load('DATA/DGP_SO.mat', 'eqm_dgp_so','approx_dgp_so'); 
+end
 
 %% Generate matrices for temporary equilibrium
-
 tic
-    mat_pbp1 = MAT(params, approx_nlpf_dd);
+    mat_pbp = MAT(params, approx_nlpf_dd);
 toc
 
-tic
-    mat_pbp = MAT_CMEX(params, approx_nlpf_dd);
-toc
 
+tic
+%    mat_pbp = MAT_CMEX(params, approx_nlpf_dd);
+    mat_pbp = MAT_CMEX(params, approx_nlpf_HAT_SS);
+toc
+%{
 tic
     mat_pbp2 = MAT_CMEXB(params, approx_nlpf_dd);
 toc
-
+%}
 %% Obtain DGP path
 if RUN_DGP ==1
 disp('#################')
 disp('Running DGP')
 tic
-    [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_dd, approx_nlpf_dd,mat_pbp);
+%     [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_dd, approx_nlpf_dd,mat_pbp);
+    [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_HAT_SS, approx_nlpf_HAT_SS, mat_pbp);
 toc
 else
     load('DATA/DGP.mat', 'eqm_dgp','approx_dgp'); 
 end
 
+
+rw_dd = eqm_nlpf_dd.w_lev ./ eqm_nlpf_dd.p_lev;
+rw_dgp = eqm_dgp.wf00 ./ eqm_dgp.pf00;
+rw_dgp_so = eqm_dgp_so.wf00 ./ eqm_dgp_so.pf00;
+p_dd = eqm_nlpf_dd.p_lev;
+p_dgp = eqm_dgp.pf00;
+p_dgp_so = eqm_dgp_so.pf00;
+for t=1:TIME
+    Labor(:,:,t) =[reshape(eqm_nlpf_dd.Ldyn(:,:,t),N*J,1) reshape(eqm_dgp.Ldyn(:,:,t),N*J,1) reshape(eqm_dgp_so.Ldyn(:,:,t),N*J,1)];
+end
+disp('########################################')
+disp('Approximation error for Labor')
+sum(abs(Labor(:,1,2)-Labor(:,2,2))) % error of the first order on Labor allocation
+sum(abs(Labor(:,1,2)-Labor(:,3,2))) % error of the second order on Labor allocation 
+for t=1:TIME
+    Labor_err(t) = sum(abs(Labor(:,1,t)-Labor(:,2,t)))/sum(abs(Labor(:,1,t)-Labor(:,3,t))); % difference in error in Labor allocation
+    rw(:,:,t) = [reshape(rw_dd(:,:,t),N*J,1) reshape(rw_dgp(:,:,t),N*J,1) reshape(rw_dgp_so(:,:,t),N*J,1)];
+    p(:,:,t) = [reshape(p_dd(:,:,t),N*J,1) reshape(p_dgp(:,:,t),N*J,1) reshape(p_dgp_so(:,:,t),N*J,1)];
+    rw_err(t) = sum(abs(rw(:,1,t)-rw(:,2,t)))/sum(abs(rw(:,1,t)-rw(:,3,t))); % difference in error in realwgae
+    p_err(t) = sum(abs(p(:,1,t)-p(:,2,t)))/sum(abs(p(:,1,t)-p(:,3,t))); % difference in error in price
+end
+disp('########################################')
+disp('Approximation error for price')
+sum(abs(p(:,1,2)-p(:,2,2))) % error of the first order
+sum(abs(p(:,1,2)-p(:,3,2))) % error of the second order
+
+(p(:,1,2)-p(:,2,2))' % error of the first order
+(p(:,1,2)-p(:,3,2))' % error of the second order
+disp('Approximation error for realwage')
+sum(abs(rw(:,1,2)-rw(:,2,2))) % error of the first order
+sum(abs(rw(:,1,2)-rw(:,3,2))) % error of the second order
+
+(abs(rw(:,1,2)-rw(:,2,2)))' % error of the first order
+(abs(rw(:,1,2)-rw(:,3,2)))' % error of the second order
+
+sum(sum(abs(Labor(:,1,:)-Labor(:,2,:)))) % error of the second order
+sum(sum(abs(Labor(:,1,:)-Labor(:,3,:)))) % error of the second order
+x = linspace(min(min(rw(:,:,2))),max(max(rw(:,:,2))));
+y = x;
+figure
+hold on
+plot(x,y,'black')
+scatter(rw(:,1,2),rw(:,2,2),'red')
+scatter(rw(:,1,2),rw(:,3,2),'blue','d')
+xlabel('Nonlinear hat (realwage)') 
+ylabel('Approximation (realwage)') 
+legend('45 degree line', 'First Order', 'Second Order', 'location', 'best')
+title('Level / FO / SO Comparison(Temp only)')
+saveas(gcf,'FIGURES/Temp_Dyn_rwcomparison.png')
+
+figure
+hold on
+title('Labor in region 5 sector 1 ')
+%plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_nlpf_dd.Ldyn(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp_so.Ldyn(1,5,1:TIME-1),[1,3,2]),'--')
+legend('Nonlinear','First-order','Second-order','location','best')
+saveas(gcf,'FIGURES/SO_Labor_region5.png')
+saveas(gcf,'FIGURES/SO_Labor_region5.fig')
+
+figure
+hold on
+title('Labor in region 3 sector 1 ')
+%plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_nlpf_dd.Ldyn(1,3,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,3,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp_so.Ldyn(1,3,1:TIME-1),[1,3,2]),'--')
+legend('Nonlinear','First-order','Second-order','location','best')
+saveas(gcf,'FIGURES/SO_Labor_region3.png')
+saveas(gcf,'FIGURES/SO_Labor_region3.fig')
+figure
+hold on
+title('Labor in region 1 sector 1 ')
+%plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_nlpf_dd.Ldyn(1,1,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,1,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(eqm_dgp_so.Ldyn(1,1,1:TIME-1),[1,3,2]),'--')
+legend('Nonlinear','First-order','Second-order','location','best')
+saveas(gcf,'FIGURES/SO_Labor_region1.png')
+saveas(gcf,'FIGURES/SO_Labor_region1.fig')
+
+
+figure
+hold on
+title('Real wage in region 5 sector 1 ')
+%plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(rw_dd(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(rw_dgp(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(rw_dgp_so(1,5,1:TIME-1),[1,3,2]),'--')
+legend('Nonlinear','First-order','Second-order','location','best')
+saveas(gcf,'FIGURES/SO_realwage_region5.png')
+saveas(gcf,'FIGURES/SO_realwage_region5.fig')
+
+figure
+hold on
+title('Real wage in region 3 sector 1 ')
+%plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(rw_dd(1,3,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(rw_dgp(1,3,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(rw_dgp_so(1,3,1:TIME-1),[1,3,2]),'--')
+legend('Nonlinear','First-order','Second-order','location','best')
+saveas(gcf,'FIGURES/SO_realwage_region3.png')
+saveas(gcf,'FIGURES/SO_realwage_region3.fig')
+
+figure
+hold on
+title('Real wage in region 1 sector 1 ')
+%plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,5,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(rw_dd(1,1,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(rw_dgp(1,1,1:TIME-1),[1,3,2]))
+plot(1:TIME-1,permute(rw_dgp_so(1,1,1:TIME-1),[1,3,2]),'--')
+legend('Nonlinear','First-order','Second-order','location','best')
+saveas(gcf,'FIGURES/SO_realwage_region1.png')
+saveas(gcf,'FIGURES/SO_realwage_region1.fig')
+
+%{
 %% Heterogeneous Belief
 if RUN_DGP_HETERO == 1
 disp('#################')
@@ -250,7 +449,7 @@ end
 
 figure
 hold on
-title('Realized labor in sector 1 region 5')
+title('Realized labor in sector 2 region 5')
 %plot(1:TIME-1,permute(eqm_dgp.Ldyn(1,5,1:TIME-1),[1,3,2]))
 plot(1:TIME-1,permute(eqm_dgp.L_dgp(1,5,1:TIME-1),[1,3,2]))
 plot(1:TIME-1,permute(eqm_dgp_hetero.L_dgp(1,5,1:TIME-1),[1,3,2]),'.')
@@ -286,6 +485,7 @@ plot(1:TIME-1,permute(eqm_dgp_hetero.L_A_hat(1,5,1:TIME-1,20),[2,3,4,1]),'--')
 plot(1:TIME-1,permute(eqm_dgp_hetero.L_B_hat(1,5,1:TIME-1,20),[2,3,4,1]),':')
 legend('Homogeneous Agent (A only)','HETERO:A','HETERO:B','location','best')
 saveas(gcf,'FIGURES/hetero_L_belief_2.png')
+%}
 %{
 E_A_T_hat = params.belief.E_A_T_hat;
 E_B_T_hat = params.belief.E_B_T_hat;

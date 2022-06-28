@@ -92,7 +92,8 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
                 end
             end
         end
-        p_hat(:,:,t) = sum(P_w+P_p+P_T,3)  + (1/2) * sum(sum(P_ww+P_pp+P_TT+P_wT+P_pT+P_wp,4),3);
+    p_hat(:,:,t) = sum(P_w+P_p+P_T,3)  + (1/2) * sum(sum(P_ww+P_pp+P_TT,4),3) + sum(sum(P_wT+P_pT+P_wp,4),3);
+%         p_hat(:,:,t) = sum(P_w+P_p+P_T,3)  + (1/2) * sum(sum(P_ww+P_pp+P_TT+P_wT+P_pT+P_wp,4),3);
 %        p_hat(:,:,t) = sum(P_w+P_p+P_T,3)  + (1/2) * sum(P_ww1+P_pp1+P_TT1+P_wT1+P_pT1+P_wp1,3) + (1/2) * sum(sum(P_ww2+P_pp2+P_TT2+P_wT2+P_pT2+P_wp2,4),3);
 %        p_hat(:,:,t) = sum(P_w+P_p+P_T,3); % first-order approximation
     end  
@@ -149,7 +150,8 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
                 end
             end
         end
-        X_hat(:,:,t) = sum(X_pi+X_X,3) +sum(X_w+X_L,3) + (1/2) * sum(sum(X_XX+X_pipi+X_piX,4),3) + (1/2) * sum(sum(X_piw+X_piL+X_Xw+X_XL,4),3) + (1/2) * sum(sum(X_ww+X_LL+X_wL,4),3);
+        X_hat(:,:,t) = sum(X_pi+X_X,3) +sum(X_w+X_L,3) + (1/2) * (sum(sum(X_XX+X_pipi,4),3) + sum(sum(X_ww+X_LL,4),3)) + sum(sum(X_piX,4),3) + sum(sum(X_piw+X_piL+X_Xw+X_XL,4),3) +  sum(sum(X_wL,4),3);
+%        X_hat(:,:,t) = sum(X_pi+X_X,3) +sum(X_w+X_L,3) + (1/2) * sum(sum(X_XX+X_pipi+X_piX,4),3) + (1/2) * sum(sum(X_piw+X_piL+X_Xw+X_XL,4),3) + (1/2) * sum(sum(X_ww+X_LL+X_wL,4),3);
 %         X_hat(:,:,t) = sum(X_pi+X_X,3) + sum(X_w+X_L,3); %first-order approx
     end  
     % Step 4e. Solve for an updated w_hat using the labor market clearing
@@ -169,7 +171,8 @@ while (ITER_TEMP <= MAXIT) && (wmax > TOLTEMP)
                 end
             end
         end
-        w_update(:,:,t) = w_L + sum(w_pi+w_X,3) + (1/2) * sum(sum(w_pipi+w_XX+w_piX,4),3);
+        w_update(:,:,t) = w_L + sum(w_pi+w_X,3) + (1/2) * sum(sum(w_pipi+w_XX,4),3) + +sum(sum(w_piX,4),3);
+%        w_update(:,:,t) = w_L + sum(w_pi+w_X,3) + (1/2) * sum(sum(w_pipi+w_XX+w_piX,4),3);
 %        w_update(:,:,t) = w_L+ sum(w_pi+w_X,3);
         w_update(:,:,t) = w_update(:,:,t)-w_update(1,1,t); %normalize the first wage to be a constant across periods; should not change anything
     end
