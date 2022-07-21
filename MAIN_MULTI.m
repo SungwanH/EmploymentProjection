@@ -3,22 +3,48 @@ close all
 clc;
 digits(50)
 
-% Call parameters
-params=PARAMS();
+% Prepare params under different assumption on the true belief updating
+% rule
+params=PARAMS(0.5);
+params_w_01=PARAMS(0.1);
+params_w_09=PARAMS(0.9);
+params_w_re=PARAMS(1); % rational expectation
 v2struct(params.envr);
-%v2struct(params.modl);
-%v2struct(params.prod);
 
-RUN_NLPF_HAT_SS     = 0; 
-RUN_NLPF_HAT        = 0; 
-RUN_NLPF_CROSS_TIME = 1; 
-RUN_DGP             = 0; 
-RUN_RECUR           = 0;
+%% Inspecting productivity and belief.
+Figure1=figure;
+hold on
+title('Actual and belief productivity in region 1')
+h(1)=plot(1:TIME, permute(params.prod.T(1,CHINA,1:TIME),[2,3,1]),'LineWidth',3);
+h(2)=plot(1:TIME, permute(params.belief.T_belief(1,CHINA,1:TIME,1),[2,3,4,1]),'--','LineWidth',2);
+h(2)=plot(15:TIME, permute(params.belief.T_belief(1,CHINA,15:TIME,15),[2,3,4,1]),'--','LineWidth',2);
+h(2)=plot(30:TIME, permute(params.belief.T_belief(1,CHINA,30:TIME,30),[2,3,4,1]),'--','LineWidth',2);
+h(3)=plot(1:TIME, permute(params_w_re.belief.T_belief(1,CHINA,1:TIME,1),[2,3,4,1]),'.-','LineWidth',1.2);
+h(3)=plot(15:TIME, permute(params_w_re.belief.T_belief(1,CHINA,15:TIME,15),[2,3,4,1]),'.-','LineWidth',1.2);
+h(3)=plot(30:TIME, permute(params_w_re.belief.T_belief(1,CHINA,30:TIME,30),[2,3,4,1]),'.-','LineWidth',1.2);
+h(4)=plot(1:TIME, permute(params_w_01.belief.T_belief(1,CHINA,1:TIME,1),[2,3,4,1]),':','LineWidth',2);
+h(4)=plot(15:TIME, permute(params_w_01.belief.T_belief(1,CHINA,15:TIME,15),[2,3,4,1]),':','LineWidth',2);
+h(4)=plot(30:TIME, permute(params_w_01.belief.T_belief(1,CHINA,30:TIME,30),[2,3,4,1]),':','LineWidth',2);
+h(5)=xline(30);
+legend(h([1,2 ,3,4,5]),{'Actual','Belief (W=0.5)', 'Belief (W=1)','Belief(W=0.1)','Shocks stop'},'location','southeast');
+print(Figure1,'figures/productivity_and_belief.png','-dpng','-r600');
+
+
+
+%% Switchers for this program; loading data
+RUN_NLPF_HAT_SS = 1; 
+RUN_NLPF_HAT    = 1; 
+RUN_NLPF_DD     = 1; 
+RUN_DGP         = 1; 
+RUN_RECUR       = 1;
 
 % Load initial data
 data_4_sector=load('DATA/BASE_FOURSECTOR.mat', 'VALjn00', 'Din00','mu0','L0');
 
-%% Obtain non-linear level outcome in HAT (Obtain initial Steady State)
+%%Using fake data
+data_4_sector = FAKE_DATA(params);
+
+%% Obtain non-linear level outcome in HAT (obtain the path representating initial steady state)
 params_ss=rmfield(params,'prod');
 hat_fundamental_ss.T_HAT=params.prod.T_HAT_SS;
 hat_fundamental_ss.TIME=TIME_SS;
@@ -38,185 +64,188 @@ if RUN_NLPF_HAT_SS ==1
     temporary_struct.Ljn_hat00 = ones(J,N);
     temporary_struct.T_hat00   = ones(J,N);
     temporary_struct.Din00=data_4_sector.Din00;
+    temporary_struct.Din0=temporary_struct.Din00./sum(temporary_struct.Din00,2);
 
     [~, ~, ~, temporary_struct.Din00_matched, temporary_struct.X_matched, temporary_struct.VALjn00_matched] =...
         NLPF_TEMP_HAT(params, temporary_struct.VALjn00, temporary_struct.Din00, temporary_struct.kappa_hat, temporary_struct.T_hat00, temporary_struct.Ljn_hat00, ...
-        temporary_struct. w_guess, temporary_struct.p_guess);
+        temporary_struct.w_guess, temporary_struct.p_guess);
      
-    % Scale initial labor allocation it to biannually
-    % for quicker convergence
-    %Change to Annual basis
-    [temporary_struct.VV,temporary_struct.D] = eig(data_4_sector.mu0(:,:));
-    temporary_struct.mu0 = real(temporary_struct.VV * (temporary_struct.D)^8 * inv(temporary_struct.VV));
+    temporary_struct.mu0=data_4_sector.mu0(:,:);
     temporary_struct.L00 =data_4_sector.L0(:);
 
     % start from steady state
     for i=1:500
         temporary_struct.L00 =  temporary_struct.mu0'*temporary_struct.L00;
     end
-    temporary_struct.L0=reshape(temporary_struct.L00,J,R);  
+    temporary_struct.L0      =  reshape(temporary_struct.L00,J,R);  
 
     starting_point_ss.VALjn0    = temporary_struct.VALjn00_matched; %Labor compensation (w*L)
     starting_point_ss.Din0      = temporary_struct.Din00_matched; %bilateral trade shares
     starting_point_ss.X0        = temporary_struct.X_matched; %Total expenditure 
-    starting_point_ss.L0=temporary_struct.L0;
-    starting_point_ss.mu0=temporary_struct.mu0;
+    starting_point_ss.L0        = temporary_struct.L0;
+    starting_point_ss.mu0       = temporary_struct.mu0;
     
     initial_guess_ss.v_td=ones(R*(J),TIME_SS);
 %    load('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS'); %one-shot convergence
-%    initial_guess_ss.v_td= eqm_nlpf_HAT_SS.v_td(:,1:length(eqm_nlpf_HAT_SS.v_td));
+ %   initial_guess_ss.v_td= eqm_nlpf_HAT_SS.v_td(:,1:length(eqm_nlpf_HAT_SS.v_td));
     
          
     [eqm_nlpf_HAT_SS, approx_nlpf_HAT_SS] = NLPF_HAT(params, starting_point_ss,hat_fundamental_ss,initial_guess_ss);
      save('DATA/NLPF_HAT_SS.mat', 'eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS');     
-     clear temporary_struct eqm_nlpf_HAT_SS approx_nlpf_HAT_SS
+     clear temporary_struct % eqm_nlpf_HAT_SS approx_nlpf_HAT_SS
 else
-    %loading the equilibrium paths in the baseline economy
     load('DATA/NLPF_HAT_SS.mat','eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS'); 
 end
 
 
-
-
-
 %% Obtain non-linear level outcome in HAT
 params_NLPF=rmfield(params,'prod');
-hat_fundamental_NLPF.T_HAT=params.prod.T_HAT;
+hat_fundamental_NLPF.T_HAT=params.prod.T_HAT_SS; 
 hat_fundamental_NLPF.TIME=TIME;
-
 if RUN_NLPF_HAT ==1
     disp('#################')
     disp('Running NLPF_HAT')
     
-     v_td=ones(R*(J),TIME); %Initial guess for the Ys (exp(Vt+1-V)^1/NU)
+     v_td=ones(R*(J),TIME);  
     load('DATA/NLPF_HAT_SS.mat','eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS')
 
     starting_point_nlpf.VALjn0    = eqm_nlpf_HAT_SS.VALjn00(:,:,TIME_SS); %Labor compensation (w*L)
-    starting_point_nlpf.X0        = eqm_nlpf_HAT_SS.X(:,:,TIME_SS);       %total expenditure     
-    starting_point_nlpf.L0        = eqm_nlpf_HAT_SS.Ldyn(:,:,TIME_SS);    %employment path
-    starting_point_nlpf.mu0       = approx_nlpf_HAT_SS.mu(:,:,TIME_SS);   %migration shares
-    starting_point_nlpf.Din0      = approx_nlpf_HAT_SS.pi(:,:,TIME_SS);   %bilateral trade shares
+    starting_point_nlpf.X0        = eqm_nlpf_HAT_SS.X(:,:,TIME_SS); %Total expenditure     
+    starting_point_nlpf.L0        = eqm_nlpf_HAT_SS.Ldyn(:,:,TIME_SS);
+    starting_point_nlpf.mu0       = approx_nlpf_HAT_SS.mu(:,:,TIME_SS);
+    starting_point_nlpf.Din0      = approx_nlpf_HAT_SS.pi(:,:,TIME_SS); %bilateral trade shares
 
-    initial_guess_nlpf.v_td       = ones(R*(J),TIME); %Initial guess for the Ys (exp(Vt+1-V)^1/NU)
+    initial_guess_nlpf.v_td=ones(R*(J),TIME); %Initial guess for the Ys (exp(Vt+1-V)^1/NU)
     
- %   load('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT'); %one-shot convergence
- %   initial_guess_nlpf.v_td= eqm_nlpf_HAT.v_td(:,1:TIME);
+%    load('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT'); %one-shot convergence
+%    initial_guess_nlpf.v_td= eqm_nlpf_HAT.v_td(:,1:TIME);
     
     [eqm_nlpf_HAT, approx_nlpf_HAT] = NLPF_HAT(params_NLPF, starting_point_nlpf,hat_fundamental_NLPF,initial_guess_nlpf);
 
     save('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT','approx_nlpf_HAT');     
 %    clear  eqm_nlpf_HAT_SS approx_nlpf_HAT_SS   
 else
-    %loading the equilibrium paths in the baseline economy
     load('DATA/NLPF_HAT.mat','eqm_nlpf_HAT','approx_nlpf_HAT'); %loading the equilibrium values in the baseline economy
 end
 
 
-%% Obtain non-linear Cross-Time difference (Counterfactual)
+
+%% Obtain non-linear Double (Cross & Time) difference
+% This part derives counterfactual impact of productivity shock
 params_NLPF=rmfield(params,'prod');
-%T_HAT_CF = ones(J,N,TIME);
-%hat_fundamental_NLPF.T_HAT=T_HAT_CF;
+hat_fundamental_cross.T_HAT = ones(J,N,TIME);
 for t=1:TIME-1
-    hat_fundamental_cross.T_HAT(:,:,t+1)=(params.prod.T_belief(:,:,t+1,1)./params.prod.T_belief(:,:,t,1))./(params.prod.T(:,:,t+1)./params.prod.T(:,:,t)); 
-%    hat_fundamental_NLPF.T_HAT(:,:,t+1)=ones(J,N,1)./(params.prod.T(:,:,t+1)./params.prod.T(:,:,t)); 
+    hat_fundamental_cross.T_HAT(:,:,t+1)= (params.prod.T(:,:,t+1)./params.prod.T(:,:,t))./ones(J,N,1); 
 end
 hat_fundamental_cross.TIME=TIME;
 
-if RUN_NLPF_CROSS_TIME ==1
+if RUN_NLPF_DD ==1
     disp('#################')
-    disp('Running NLPF_CROSS')
+    disp('Running NLPF_DD (With Objective Productivity)')
     
     v_cd=ones(R*(J),TIME); %Initial guess for the Ys (exp(Vt+1-V)^1/NU)
     load('DATA/NLPF_HAT_SS.mat','eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS')
-
-    starting_point_cross.VALjn0    = eqm_nlpf_HAT_SS.VALjn00(:,:,TIME_SS); %Labor compensation (w*L)
-    starting_point_cross.X0        = eqm_nlpf_HAT_SS.X(:,:,TIME_SS); %Total expenditure     
-    starting_point_cross.L0        = eqm_nlpf_HAT_SS.Ldyn(:,:,TIME_SS);
-    starting_point_cross.mu0       = approx_nlpf_HAT_SS.mu(:,:,TIME_SS);
-    starting_point_cross.Din0      = approx_nlpf_HAT_SS.pi(:,:,TIME_SS); %bilateral trade shares
     
-    base_point_cross.VALjn_base    = eqm_nlpf_HAT.VALjn00;
-    base_point_cross.Ldyn_base    = eqm_nlpf_HAT.Ldyn;
-    base_point_cross.Din_base      = approx_nlpf_HAT.pi;
-    base_point_cross.mu_base       = approx_nlpf_HAT.mu;
-    base_point_cross.wf00_base    = eqm_nlpf_HAT.wf00;
-    base_point_cross.pf00_base    = eqm_nlpf_HAT.pf00;
-
-    initial_guess_cross.v_cd        = ones(R*(J),TIME); %Initial guess for the Ys exp((V1'-V0')-(V1-V0))^1/NU 
+    % starting points for counterfactual path
+    starting_point_dd.VALjn0    = eqm_nlpf_HAT_SS.VALjn00(:,:,TIME_SS); %Labor compensation (w*L)
+    starting_point_dd.X0        = eqm_nlpf_HAT_SS.X(:,:,TIME_SS); %Total expenditure     
+    starting_point_dd.L0        = eqm_nlpf_HAT_SS.Ldyn(:,:,TIME_SS);
+    starting_point_dd.mu0       = approx_nlpf_HAT_SS.mu(:,:,TIME_SS);
+    starting_point_dd.Din0      = approx_nlpf_HAT_SS.pi(:,:,TIME_SS); %bilateral trade shares
     
- %   load('DATA/NLPF_HAT.mat', 'eqm_nlpf_HAT'); %one-shot convergence
- %   initial_guess_nlpf.v_td= eqm_nlpf_HAT.v_td(:,1:TIME);
-    
-    [eqm_nlpf_CROSS_TIME, approx_nlpf_CROSS_TIME] = NLPF_CROSS_TIME(params_NLPF, starting_point_cross, base_point_cross, hat_fundamental_cross, initial_guess_cross);
+    %compute dot values from the baseline path level variables
+    base_point_dd.mu_base_dot(:,:,1)    = approx_nlpf_HAT.mu(:,:,1)./approx_nlpf_HAT_SS.mu(:,:,TIME_SS);
+    for t=1:TIME-1
+        base_point_dd.VALjn_base_dot(:,:,t+1) = eqm_nlpf_HAT.VALjn00(:,:,t+1)./eqm_nlpf_HAT.VALjn00(:,:,t);
+        base_point_dd.Ldyn_base_dot(:,:,t+1)  = eqm_nlpf_HAT.Ldyn(:,:,t+1)./eqm_nlpf_HAT.Ldyn(:,:,t);
+        base_point_dd.Din_base_dot(:,:,t+1)   = approx_nlpf_HAT.pi(:,:,t+1)./approx_nlpf_HAT.pi(:,:,t);
+        base_point_dd.mu_base_dot(:,:,t+1)    = approx_nlpf_HAT.mu(:,:,t+1)./approx_nlpf_HAT.mu(:,:,t);
+    end
+    base_point_dd.mu_base_dot(isnan(base_point_dd.mu_base_dot)) = 0;
+    base_point_dd.Din_base_dot(isnan(base_point_dd.Din_base_dot)) = 0;
+    base_point_dd.VALjn_base    = eqm_nlpf_HAT.VALjn00;
+    base_point_dd.Ldyn_base     = eqm_nlpf_HAT.Ldyn;
+    base_point_dd.Din_base      = approx_nlpf_HAT.pi;
+    base_point_dd.mu_base       = approx_nlpf_HAT.mu;
+    base_point_dd.wf00_base     = eqm_nlpf_HAT.wf00;
+    base_point_dd.pf00_base     = eqm_nlpf_HAT.pf00;
 
-    save('DATA/NLPF_CROSS.mat', 'eqm_nlpf_CROSS_TIME','approx_nlpf_CROSS_TIME');     
+    initial_guess_cross.v_cd       = ones(R*(J),TIME); %Initial guess for the Ys exp((V1'-V0')-(V1-V0))^1/NU 
+
+    [eqm_nlpf_dd, approx_nlpf_dd] = NLPF_DD_NEW(params_NLPF, starting_point_dd, base_point_dd, hat_fundamental_cross, initial_guess_cross);
+
+    save('DATA/NLPF_DD.mat', 'eqm_nlpf_dd','approx_nlpf_dd');     
     clear  eqm_nlpf_HAT_SS approx_nlpf_HAT_SS   
 else
-    %loading the equilibrium paths in the baseline economy
-    load('DATA/NLPF_CROSS.mat','eqm_nlpf_CROSS_TIME','approx_nlpf_CROSS_TIME'); %loading the equilibrium values in the baseline economy
+    load('DATA/NLPF_DD.mat','eqm_nlpf_dd','approx_nlpf_dd'); %loading the equilibrium values in the counterfactual economy
 end
+
+%% Obtain non-linear Double (Cross & Time) difference (Counterfactual 'Belief')
+% This part derives counterfactual impact of productivity shock according
+% to the belief
+params_NLPF=rmfield(params,'prod');
+hat_fundamental_cross_belief.T_HAT = ones(J,N,TIME);
+for t=1:TIME-1
+    hat_fundamental_cross_belief.T_HAT(:,:,t+1)=(params.belief.T_belief(:,:,t+1,1)./params.belief.T_belief(:,:,t,1))./ones(J,N,1); 
+end
+hat_fundamental_cross_belief.TIME=TIME;
+
+if RUN_NLPF_DD ==1
+    disp('#################')
+    disp('Running NLPF_CROSS (With Belief)')
+    
+    load('DATA/NLPF_HAT_SS.mat','eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS')
+
+    % starting points for counterfactual path
+    starting_point_dd_belief.VALjn0    = eqm_nlpf_HAT_SS.VALjn00(:,:,TIME_SS); %Labor compensation (w*L)
+    starting_point_dd_belief.X0        = eqm_nlpf_HAT_SS.X(:,:,TIME_SS); %Total expenditure     
+    starting_point_dd_belief.L0        = eqm_nlpf_HAT_SS.Ldyn(:,:,TIME_SS);
+    starting_point_dd_belief.mu0       = approx_nlpf_HAT_SS.mu(:,:,TIME_SS);
+    starting_point_dd_belief.Din0      = approx_nlpf_HAT_SS.pi(:,:,TIME_SS); %bilateral trade shares
+    
+    %compute dot values from the baseline path level variables
+    base_point_dd_belief.mu_base_dot(:,:,1)    = approx_nlpf_HAT.mu(:,:,1)./approx_nlpf_HAT_SS.mu(:,:,TIME_SS);
+    for t=1:TIME-1
+        base_point_dd_belief.VALjn_base_dot(:,:,t+1) = eqm_nlpf_HAT.VALjn00(:,:,t+1)./eqm_nlpf_HAT.VALjn00(:,:,t);
+        base_point_dd_belief.Ldyn_base_dot(:,:,t+1)  = eqm_nlpf_HAT.Ldyn(:,:,t+1)./eqm_nlpf_HAT.Ldyn(:,:,t);
+        base_point_dd_belief.Din_base_dot(:,:,t+1)   = approx_nlpf_HAT.pi(:,:,t+1)./approx_nlpf_HAT.pi(:,:,t);
+        base_point_dd_belief.mu_base_dot(:,:,t+1)    = approx_nlpf_HAT.mu(:,:,t+1)./approx_nlpf_HAT.mu(:,:,t);
+    end
+    base_point_dd_belief.mu_base_dot(isnan(base_point_dd_belief.mu_base_dot)) = 0;
+    base_point_dd_belief.Din_base_dot(isnan(base_point_dd_belief.Din_base_dot)) = 0;
+    base_point_dd_belief.VALjn_base    = eqm_nlpf_HAT.VALjn00;
+    base_point_dd_belief.Ldyn_base     = eqm_nlpf_HAT.Ldyn;
+    base_point_dd_belief.Din_base      = approx_nlpf_HAT.pi;
+    base_point_dd_belief.mu_base       = approx_nlpf_HAT.mu;
+    base_point_dd_belief.wf00_base     = eqm_nlpf_HAT.wf00;
+    base_point_dd_belief.pf00_base     = eqm_nlpf_HAT.pf00;
+
+    initial_guess_dd_belief.v_cd       = ones(R*(J),TIME); %Initial guess for the Ys exp((V1'-V0')-(V1-V0))^1/NU 
+    
+    [eqm_nlpf_dd_belief, approx_nlpf_dd_belief] = NLPF_DD_NEW(params_NLPF, starting_point_dd_belief, base_point_dd_belief, hat_fundamental_cross_belief, initial_guess_dd_belief);
+
+    save('DATA/NLPF_DD_BELIEF.mat', 'eqm_nlpf_dd_belief','approx_nlpf_dd_belief');     
+%    clear  eqm_nlpf_HAT_SS approx_nlpf_HAT_SS   
+else
+    load('DATA/NLPF_DD_BELIEF.mat','eqm_nlpf_dd_belief','approx_nlpf_dd_belief'); %loading the equilibrium values in the counterfactual economy
+end
+
+
 
 %% Obtain DGP path
 if RUN_DGP ==1
 disp('#################')
 disp('Running DGP')
-    [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_HAT, approx_nlpf_HAT);
+    [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf_dd, approx_nlpf_dd);
+    [eqm_dgp_w_01, approx_dgp_w_01] = DGP(params_w_01, eqm_nlpf_dd, approx_nlpf_dd);
+    [eqm_dgp_w_09, approx_dgp_w_09] = DGP(params_w_09, eqm_nlpf_dd, approx_nlpf_dd);        
+    [eqm_dgp_w_re, approx_dgp_w_re] = DGP(params_w_re, eqm_nlpf_dd, approx_nlpf_dd);            
 else
     load('DATA/DGP.mat', 'eqm_dgp','approx_dgp'); 
 end
 
 
-%% Test (nonlinear solution to the belief productivity in the first period)'
-params_NLPF_belief=rmfield(params,'prod');
-hat_fundamental_NLPF_belief.TIME=TIME;
-hat_fundamental_NLPF_belief.T_HAT=ones(J,N,TIME);
-for t=1:TIME-1
-    hat_fundamental_NLPF_belief.T_HAT(:,:,t+1)=params.prod.T_belief(:,:,t+1,1)./params.prod.T_belief(:,:,t,1); 
-end
 
-disp('#################')
-disp('Running NLPF_HAT for belief in the first period')
-load('DATA/NLPF_HAT_SS.mat','eqm_nlpf_HAT_SS','approx_nlpf_HAT_SS')
-starting_point_nlpf_belief.VALjn0    = eqm_nlpf_HAT_SS.VALjn00(:,:,TIME_SS); %Labor compensation (w*L)
-starting_point_nlpf_belief.X0        = eqm_nlpf_HAT_SS.X(:,:,TIME_SS); %Total expenditure     
-starting_point_nlpf_belief.L0=eqm_nlpf_HAT_SS.Ldyn(:,:,TIME_SS);
-starting_point_nlpf_belief.mu0=approx_nlpf_HAT_SS.mu(:,:,TIME_SS);
-starting_point_nlpf_belief.Din0      = approx_nlpf_HAT_SS.pi(:,:,TIME_SS); %bilateral trade shares
-
-initial_guess_nlpf_belief.v_td=ones(R*(J),TIME); %Initial guess for the Ys (exp(Vt+1-V)^1/NU)
-
-[eqm_nlpf_HAT_belief, approx_nlpf_HAT_belief] = NLPF_HAT(params_NLPF, starting_point_nlpf_belief,hat_fundamental_NLPF_belief,initial_guess_nlpf_belief);
-
-Ldynamic = permute(sum(eqm_nlpf_HAT.Ldyn,1),[2,3,1]);
-Ldynamic_cross = permute(sum(eqm_nlpf_CROSS_TIME.Ldyn,1),[2,3,1]);
-Ldynamic_belief = permute(sum(eqm_nlpf_HAT_belief.Ldyn,1),[2,3,1]);
-LdynamicManu= reshape(sum(eqm_nlpf_HAT.Ldyn(1,:,:),2),TIME,1);
-LdynamicManu_cross= reshape(sum(eqm_nlpf_CROSS_TIME.Ldyn(1,:,:),2),TIME,1);
-LdynamicManu_belief= reshape(sum(eqm_nlpf_HAT_belief.Ldyn(1,:,:),2),TIME,1);
-L_belief_dgp = eqm_dgp.L_belief_dgp;
-L_belief_agg_dgp = permute(sum(L_belief_dgp,1),[2,3,4,1]);
-LdynamicManu_dgp= reshape(sum(L_belief_dgp(1,:,:,1),2),TIME,1);
-
-figure
-hold on
-title('Manufacture employment (level)')
-plot(1:TIME-1,LdynamicManu(1:TIME-1))
-plot(1:TIME-1,LdynamicManu_cross(1:TIME-1),'--')
-plot(1:TIME-1,LdynamicManu_belief(1:TIME-1),'--')
-plot(1:TIME-1,LdynamicManu_dgp(1:TIME-1,1),':')
-legend('Nonlinear TimeDiff','Nonlinear Time-Cross(Belief)','Nonlinear TimeDiff(Belief)','Linear Belief','location','best')
-saveas(gcf,'figures/NLPF_All.png')
-
-figure
-hold on
-title('California Employment')
-plot(1:TIME-1,Ldynamic(5,1:TIME-1))
-plot(1:TIME-1,Ldynamic_cross(5,1:TIME-1),'--')
-plot(1:TIME-1,Ldynamic_belief(5,1:TIME-1),'--')
-plot(1:TIME-1,L_belief_agg_dgp(5,1:TIME-1),':')
-%plot(1:TIME-1,L_belief_agg_dgp(5,1:TIME-1,1),':')
-legend('Nonlinear TimeDiff','Nonlinear Time-Cross(Belief)','Nonlinear TimeDiff(Belief)','Linear Belief','location','best')
-saveas(gcf,'figures/NLPF_All_CAL.png')
 
 %% Obtain Period by period DGP & PF deviation
 if RUN_RECUR ==1
@@ -224,11 +253,17 @@ disp('#################')
 disp('Running RECURSIVE')
     initial_recur.v_hat = eqm_dgp.v_hat;
     initial_recur.w_hat = eqm_dgp.w_hat;
-    [eqm_recur] = RECURSIVE(params, initial_recur, eqm_dgp, approx_dgp);
+    [eqm_recur_w_01] = RECURSIVE(params, 0.1, initial_recur, eqm_dgp, approx_dgp);
+    [eqm_recur] = RECURSIVE(params, 0.5, initial_recur, eqm_dgp, approx_dgp);
+    [eqm_recur_w_09] = RECURSIVE(params, 0.9, initial_recur, eqm_dgp, approx_dgp);    
+    [eqm_recur_w_re] = RECURSIVE(params, 1, initial_recur, eqm_dgp, approx_dgp);        
 else
-    load('DATA/RECURSIVE.mat', 'eqm_recur'); 
+    load('DATA/RECURSIVE.mat', 'eqm_recur');     
 end
 
-%% figures
-FIGURES(params, eqm_nlpf_HAT_SS, eqm_nlpf_HAT, eqm_dgp, eqm_recur)
 
+%% Make figures
+FIGURES_SCRIPT
+
+
+%% To do the saving function is not done yet.

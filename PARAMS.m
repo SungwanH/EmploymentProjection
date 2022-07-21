@@ -1,13 +1,12 @@
-function [params] = PARAMS()
-
-TIME    = 100; 
+function [params] = PARAMS(W_TRUE)
+TIME    =100; 
 TIME_SS = 200;
 N       = 87; 
 R       = 50; %number of US regions
 C       = 37; %number of non-US countries (To be used later)
 J       = 4; %number of sectors
 US      = 1;
-CHINA   = 57; %region number 
+CHINA   = 5; %region number for now assume the shock is to California
 
 % Elasticities
 load('DATA/BASE_FOURSECTOR.mat', 'alphas','T','gamma')
@@ -16,40 +15,48 @@ THETA  = 1./T;
 GAMMA      = gamma; % share of labor in production
 clear alphas
 clear T
-%THETA   = 5; %trade elasticity
+
 NU      = 5.3436; %dispersion of taste shocks (In CDP: 5.3436)
-%NU      = 3; %dispersion of taste shocks (In CDP: 5.3436)
-%BETA    = 0.9605; %discount rate (0.99^4: transformed from quarterly to yearly)
 BETA    = 0.9227; %discount rate (0.99^8: transformed from quarterly to bi-annual)
-%BETA=0.96;
-
-%TAU     = ones(N*J,N); %iceberg trade cost; JF: we no longer use TAU in
-%this version
-%TAU     = (ones(N,N)-eye(N)).*(1+rand(N))+eye(N);
 
 
-% Baseline: RHO 0.85 ENDT 20
+% Baseline:  
 SIGMA       = 0.01; % s.d. of catch-up
-W_TRUE      = 0.5; % True weight on RHO when deriving RHO_HAT
-ENDT        = 1; %Last period of learning (PF starts from here)
+ENDT        = 80; %Last period of learning (PF starts from here)
 ENDT_SAMPLE = 1;
 ENDT_DGP    = 1;
-EPST        = ENDT; %Length of epsilon draw
+EPST        = 30; %Length of epsilon draw
 
-% Learning
-RHO     = 0.80; % catch-up speed (Higher RHO -> slower catch-up)
-MU      = 0.15;
+%{
+%% FAKE DATA
+N       = 10; 
+R       = 10; %number of US regions
+C       = 0; %number of non-US countries (To be used later)
+J       = 1; %number of sectors
+US      = 2;
+CHINA   = 1; %region number for now assume the shock is to California
 
-% Technical parameters
-ESTM_BOTH   = 1; % if ESTM_BOTH =0, estimate MU only. if =1, estimate both MU and RHO
+ALPHAS=1/J*ones(J,N);
+THETA=4*ones(J,1);
+GAMMA=0.5*ones(J,N);
+
+BETA = 0.8;
+NU = 1.3;
+%BETA =0.85;
+%}
+
+
+%% Technical parameters
+ESTM_BOTH   = 0; % if ESTM_BOTH =0, estimate MU only. if =1, estimate both MU and RHO
 UPDT_V      = 0.5; %update speed for value loop (lower value->conservative)
 UPDT_W      = 0.3; %update speed for wage loop (lower value->conservative)
 UPDT_V_NL   = 0.5; %update speed for nonlinear value loop (lower value->conservative)
 UPDT_W_NL   = 0.3; %update speed for nonlinear wage loop (lower value->conservative)
-TOL_NL      = 1E-9;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
-TOL_NL_TEMP = 1E-11;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
-TOLDYN      = 1E-9;  %tolerance rate for linear dynamic equilibrium
-TOLTEMP     = 1E-11;  % tolerance rate for linear temporary equilibrium
+TOL_NL      = 1E-7;  %tolerance rate for nonlinear dynamic equilibrium (outerloop)
+TOL_NL_TEMP = 1E-7;  %tolerance rate for nonlinear temporary equilibrium (inner loop)
+TOLDYN      = 1E-7;  %tolerance rate for linear dynamic equilibrium
+TOLTEMP     = 1E-7;  % tolerance rate for linear temporary equilibrium
+TOLFP     = 1E-7;  % tolerance rate for fixed point iteration
 MAXIT       = 1E+8; %maximum number of iterations
 
 
@@ -61,12 +68,26 @@ params.tech = v2struct(ESTM_BOTH, UPDT_V, UPDT_W, UPDT_V_NL, UPDT_W_NL, TOL_NL, 
 %% Productivity
 % Baseline productivity (Used in deriving initial steady state)
 T_BASE = ones(J,N,TIME*3)*2; % US (& other countries except China) productivity is constant for all period
-T_BASE(1:J,CHINA,1:TIME*3) = 1.5;
-%Previous productivity of China (used in estimating RHO and MU)
-T_PREV = repmat(linspace(1.4,1.5,20),4,1); %Assume previous 20 periods' CHINA productivity was from 0.0to 0.1
-params.prod = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO, W_TRUE);
+T_BASE(:,CHINA,1:TIME*3) = 1.3;
 
-T = PRODUCTIVITY_DGP(params); %objective productivity (in level)
+% Learning
+RHO     = 0.9; % catch-up speed (Higher RHO -> slower catch-up)
+MU      = 0.3;
+
+%Previous productivity of China (used in estimating RHO and MU)
+t_bef=10; % # of observations from the previous period
+T_PREV=NaN(J,t_bef);
+T_PREV(:,1)=0.6;
+MU_PREV=0.45;
+
+for tt=2:t_bef
+    T_PREV(:,tt)=exp(log(T_BASE(1,US,tt))-(1-RHO)*MU_PREV-RHO*(log(T_BASE(1,US,tt))-log(T_PREV(:,tt-1))));
+end
+
+params.prod = v2struct(T_BASE, T_PREV, MU, SIGMA, RHO);
+
+T = PRODUCTIVITY_DGP(params); %objective productivity from the first period and on
+
 % Derive Time difference productivity
 T_HAT_SS = ones(J,N,TIME_SS);
 T_HAT    = ones(J,N,TIME);
@@ -76,38 +97,19 @@ end
 for t=1:TIME-1
     T_HAT(:,:,t+1) = T(:,:,t+1)./T(:,:,t); %relative change in productivity (CHINA is catching up here)
 end
+params.prod = v2struct(MU, SIGMA, RHO, T_BASE, T_PREV, T, T_HAT, T_HAT_SS,t_bef);
 
-params.prod = v2struct(MU, SIGMA, RHO, W_TRUE, T_BASE, T_PREV, T, T_HAT, T_HAT_SS);
 
-% Derive productivity belief log deviation from objective productivity
+
+%% belief for productivity given the weight
 T_belief = BELIEF(params, W_TRUE);
 E_T_hat  = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
-for tt=1:ENDT+1
-    for j=1:J
-        E_T_hat(j,CHINA,:,tt) = log(T_belief(j,CHINA,:,tt)) - log(T(j,CHINA,:));
-    end
-end
-% perfect foresight deviation from belief
 E_T_hat_pf = zeros(J,N,TIME,ENDT+1);
+
 for tt=1:ENDT+1
-    for j=1:J
-       E_T_hat_pf(j,CHINA,:,tt) = -log(T_belief(j,CHINA,:,tt)) + log(T(j,CHINA,:));
-    end
+       E_T_hat(:,CHINA,:,tt) = log(T_belief(:,CHINA,:,tt)) - log(T(:,CHINA,:));
+       E_T_hat_pf(:,CHINA,:,tt) = -log(T_belief(:,CHINA,:,tt)) + log(T(:,CHINA,:));        
 end
-% Percentage deviation
-%E_T_hat = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
-%for tt=1:ENDT+1
-%    for j=1:J
-%         E_T_hat(j,CHINA,:,tt) = (T_belief(j,CHINA,:,tt)-T(j,CHINA,:))./(T(j,CHINA,:));
-%    end
-%end
-%E_T_hat_pf = zeros(J,N,TIME,ENDT+1);
-%for tt=1:ENDT+1
-%    for j=1:J
-%         E_T_hat_pf(j,CHINA,:,tt) = (T(j,CHINA,:)-T_belief(j,CHINA,:,tt))./(T_belief(j,CHINA,:,tt));
-%    end
-%end
-% add deviation variables 
-params.prod = v2struct(MU, SIGMA, RHO, W_TRUE, T_BASE, T_PREV, T, T_HAT, T_HAT_SS, T_belief, E_T_hat, E_T_hat_pf);
+params.belief=v2struct(W_TRUE,E_T_hat,E_T_hat_pf,T_belief);
 
 end

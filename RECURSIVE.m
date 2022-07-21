@@ -1,4 +1,4 @@
-function eqm_recur = RECURSIVE(params, W, initial, eqm, approx)
+function eqm_recur = RECURSIVE(params, W_value, initial, eqm, approx)
 % This code gives (linearized) period by period deviation from DGP+PF path
 % input:
 % params: parameters
@@ -9,11 +9,20 @@ function eqm_recur = RECURSIVE(params, W, initial, eqm, approx)
 
 
 %% Roll down parameters
-
 v2struct(params.envr);
 v2struct(params.tech);
-E_T_hat    = params.prod.E_T_hat;      % Belief on productivity (deviation from T)
-E_T_hat_pf = params.prod.E_T_hat_pf;% perfect foresight belief (deviation from T_belief)
+
+T=params.prod.T;
+T_belief = BELIEF(params, W_value);
+E_T_hat  = zeros(J,N,TIME,ENDT+1); % Except CHINA, productivity is constant
+E_T_hat_pf = zeros(J,N,TIME,ENDT+1);
+
+for tt=1:ENDT+1
+       E_T_hat(:,CHINA,:,tt) = log(T_belief(:,CHINA,:,tt)) - log(T(:,CHINA,:));
+       E_T_hat_pf(:,CHINA,:,tt) = -log(T_belief(:,CHINA,:,tt)) + log(T(:,CHINA,:));        
+end
+
+
 
 %Initial approximation point
 Ldyn   = eqm.Ldyn;

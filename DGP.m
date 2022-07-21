@@ -1,4 +1,4 @@
-function [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf, approx_nlpf)
+function [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf, approx_nlpf,mat_pbp)
 % This code gives DGP+PF path
 % From t=ENDT, people gets perfect foresight
 % Until ENDT, people imperfectly guess the future path of productivity
@@ -12,20 +12,23 @@ function [eqm_dgp, approx_dgp] = DGP(params, eqm_nlpf, approx_nlpf)
 
 %% Roll down parameters
 v2struct(params.envr)
-E_T_hat = params.prod.E_T_hat;      % Belief on productivity (deviation from T)
+v2struct(params.belief)
+
+
 %% Roll down Baseline outcomes
 v2struct(eqm_nlpf)
 v2struct(approx_nlpf)
 
+%mat_pbp =ones(N,J,TIME);
 % period by period equilibrium
 % Initialize
 v_hat     = zeros(R*J,TIME); 
-w_hat     = zeros(J,N,TIME); 
-p_hat     = zeros(J,N,TIME); 
-X_hat     = zeros(J,N,TIME); 
-pi_hat    = zeros(N*J,N,TIME); 
-mu_hat    = zeros(R*J,R*J,TIME); 
-L_hat     = zeros(J,R,TIME); 
+w_hat     = NaN(J,N,TIME,ENDT+1); 
+p_hat     = NaN(J,N,TIME,ENDT+1); 
+X_hat     = NaN(J,N,TIME,ENDT+1); 
+pi_hat    = NaN(N*J,N,TIME,ENDT+1); 
+mu_hat    = NaN(R*J,R*J,TIME,ENDT+1); 
+L_hat     = NaN(J,R,TIME,ENDT+1); 
 L_dgp     = zeros(J,R,TIME);
 kappa_hat = zeros(N*J,N,TIME);
 L = zeros(R*J,1); %initial deviation from the path around which we are linearizing
@@ -35,7 +38,8 @@ for t1=1:ENDT+1
          V = zeros(R*J,TIME); %initial value for v_hat
          W = zeros(J,N,TIME);
     end
-    [eqm_temp] = PBP_DYN(params, t1, t1, E_T_hat, kappa_hat, L, V, W, approx_nlpf);
+    [eqm_temp] = PBP_DYN(params, t1, t1, E_T_hat_test, kappa_hat, L, V, W, eqm_nlpf, approx_nlpf, mat_pbp);
+%    [eqm_temp] = PBP_DYN_SO(params, t1, t1, E_T_hat_test, kappa_hat, L, V, W, eqm_nlpf, approx_nlpf);
                       
     L = eqm_temp.L(:,t1+1); % update the initial value of labor 
     V = eqm_temp.v; % update the initial value of V
@@ -96,6 +100,9 @@ end
 X    = exp(X_dgp) .* eqm_nlpf.X;
 wf00 = exp(w_dgp) .* eqm_nlpf.wf00;
 pf00 = exp(p_dgp) .* eqm_nlpf.pf00;
+w_lev = exp(w_dgp) .* eqm_nlpf.w_lev;
+p_lev = exp(p_dgp) .* eqm_nlpf.p_lev;
+P_lev = exp(P_dgp) .* eqm_nlpf.P_lev;
 VALjn00(1:J,1:R,1:TIME)   = exp(w_dgp(1:J,1:R,1:TIME))  .* exp(L_dgp(1:J,1:R,1:TIME)) .* eqm_nlpf.VALjn00(1:J,1:R,1:TIME);
 VALjn00(1:J,R+1:N,1:TIME) = exp(w_dgp(1:J,R+1:N,1:TIME)).* eqm_nlpf.VALjn00(1:J,R+1:N,1:TIME); % L_hat for non-US is zero
 
@@ -140,7 +147,7 @@ end
 
 %save the outputs
 eqm_dgp   = v2struct(Ldyn, L_belief_dgp, L_hat, v_hat, w_hat, p_hat, P_hat, pi_hat, mu_hat, X_hat, E_T_hat, ...
-    L_dgp, w_dgp, p_dgp, P_dgp, pi_dgp, mu_dgp, X_dgp, X, VALjn00, wf00, pf00);
+    L_dgp, w_dgp, p_dgp, P_dgp, pi_dgp, mu_dgp, X_dgp, X, VALjn00, wf00, pf00, w_lev, p_lev, P_lev);
 approx_dgp = v2struct(mu, pi, varrho, chi, zeta, lambda);
 
 save('DATA/DGP.mat', 'eqm_dgp', 'approx_dgp'); 
