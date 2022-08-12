@@ -1,4 +1,4 @@
-function [wf0, pf0, Pf0, Dinp, X, VALjn] = NLPF_TEMP_CROSS_TIME(params, VALjn_dot, Din_dot, VALjn0, Din, kappa_hat, T_hat, Ljn_hat, w_guess, p_guess)
+function [wf0, pf0, Pf0, Dinp, X, VALjn] = NLPF_DD_TEMP(params, VALjn_dot, Din_dot, VALjn0, Din, kappa_hat, T_hat, Ljn_hat, w_guess, p_guess)
 % This function solves temporary equilibrium given Labor.
 % Updates price and wage simultaneously but at a different speed
 %% Roll down parameters

@@ -1,5 +1,5 @@
 function [eqm_nlpf_HAT,approx_nlpf_HAT] = NLPF_HAT(params, starting_point, hat_fundamentals,initial_guess)
-% Non-linear baseline perefect foresight equilibrium
+% Non-linear baseline perefect foresight equilibrium (time-difference)
 % 50 regions + 37 other countries
 %% Roll down parameters
 v2struct(params.envr);
@@ -96,8 +96,10 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
         pi(:,:,t+1)      = pi_temp;
         X(:,:,t+1)       = X_temp;
         VALjn00(:,:,t+1) = VALjn;
-        w_guess          = wf0;
-        p_guess          = pf0;
+%     w_guess          = wf0;
+%     p_guess          = pf0;
+
+        
         %updating the initial conditions
         VALjn0=VALjn;
         Din0=pi_temp;
@@ -108,26 +110,40 @@ while (ITER_DYN <= MAXIT) && (Ymax > TOL_NL)
     
     %%%%Solving for the new path of values in time differences%%%        
     realwages_us=realwages(:,1:R,:); 
-    realwages_us_aux2=reshape(realwages_us,R*J,TIME); % after this step, realwages_us_aux2 is a 200X200; in the first dimension, two consecutive observations are different sectors of the same country
-    realwages_us_nuu=realwages_us_aux2.^(1/NU);
+%    realwages_us_aux2=reshape(realwages_us,R*J,TIME); % after this step, realwages_us_aux2 is a 200X200; in the first dimension, two consecutive observations are different sectors of the same country
+    %realwages_us_nuu=realwages_us_aux2.^(1/NU);
+    %realwages_us_nuu=exp((1/(1-CRRA_PAR)) * realwages_us_aux2.^(1-CRRA_PAR)).^(1/NU); % This term is due to CRRA utility
+    rw_lev_base = zeros(J,R,TIME);
+    rw_lev_base(:,:,1) = rw0;
+    for t=1:TIME-1
+        rw_lev_base(:,:,t+1) = realwages_us(:,:,t+1) .* rw_lev_base(:,1:R,t);
+    end
     
+    rw_lev_base_RJ = reshape(rw_lev_base,R*J,TIME);
+    %realwages_us_nuu=exp((1/(1-CRRA_PAR)) * rw_lev_RJ.^(1-CRRA_PAR)).^(1/NU); % This term is due to CRRA utility
+    realwages_us_nuu = ones(R*J,TIME);
+    for t=1:TIME-1
+        temp1 = ((1/(1-CRRA_PAR)) * rw_lev_base_RJ(:,t+1).^(1-CRRA_PAR));
+        temp2 = ((1/(1-CRRA_PAR)) * rw_lev_base_RJ(:,t).^(1-CRRA_PAR));
+        realwages_us_nuu(:,t+1)= (exp(temp1 - temp2)).^(1/NU); % This term is due to CRRA utility
+    end
+
     % we now update value function backwards; Y standard for the changes in
     % value function from this iteration
-    Y=NaN(R*(J),TIME);    
-    Y(:,TIME)=realwages_us_nuu(:,TIME);    
-    for tt=TIME-1:-1:1
+    %Y=NaN(R*(J),TIME);    
+    %Y(:,TIME)=realwages_us_nuu(:,TIME);    %fix this part
+    Y=ones(R*(J),TIME);
+    for tt=TIME-1:-1:2
         temp0=ones(J*R,1)*(Y(:,tt+1).^BETA)';
         temp=sum(mu(:,:,tt).*temp0,2); 
         Y(:,tt)=realwages_us_nuu(:,tt).*temp;
     end    
     
     %Excess function
-    checkY = zeros(TIME,1); 
-    for t=1:TIME
-        checkY(t,1) = max(abs(log(Y(:,t))-log(v_td(:,t))));
-    end
+    checkY = zeros(TIME-1,1); 
+    checkY = max(abs(log(Y(:,2:end))-log(v_td(:,2:end))));
     Ymax = max(checkY)    
-    v_td = UPDT_V_NL * Y + (1-UPDT_V_NL) * v_td;
+    v_td(:,2:end) = UPDT_V_NL * Y(:,2:end) + (1-UPDT_V_NL) * v_td(:,2:end);
     ITER_DYN = ITER_DYN+1;
 end
 
@@ -180,7 +196,7 @@ end
 %end
 
 
-eqm_nlpf_HAT=v2struct(v_td, Ldyn, realwages, wf00, pf00, VALjn00, X);
+eqm_nlpf_HAT=v2struct(v_td, Ldyn, realwages, wf00, pf00, VALjn00, X, rw_lev_base);
 approx_nlpf_HAT= v2struct(mu, pi, varrho, chi, zeta, lambda);
 
 %{
